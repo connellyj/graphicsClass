@@ -1,5 +1,7 @@
-/*** In general dimensions ***/
+/*** Methods filled in by Julia Connelly 01/07/2016 ***/
+
 #include <stdio.h>
+
 /* Copies the dim-dimensional vector v to the dim-dimensional vector copy. */
 void vecCopy(int dim, double v[], double copy[]) {
 	int i;
@@ -31,12 +33,3 @@ void vecScale(int dim, double c, double w[], double cTimesW[]) {
         cTimesW[i] = w[i] * c;
     }
 }
-
-//int main(void){
-//    double a[2] = {1,2}; double b[2]; double c[2];
-//    vecCopy(2,a,b);
-//    vecSubtract(2,a,b,c);
-//    vecScale(2, 2.0, a, c);
-//    printf("%f\n%f\n", c[0], c[1]);
-//    printf("%f\n%f\n", b[0], b[1]);
-//}

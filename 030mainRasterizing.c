@@ -1,4 +1,4 @@
-/* Julia Connelly, 01/07/2017, CS311 */
+/* Julia Connelly, Kerim Celik, 01/10/2017 */
 
 #include "030triangle.c"
 #include "000pixel.h"

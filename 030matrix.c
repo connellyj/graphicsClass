@@ -1,4 +1,4 @@
-/*** 2 x 2 Matrices ***/
+/*** Methods filled in by Kerim Celik and Julia Connelly 01/10/2017 ***/
 
 #include <stdio.h>
 
@@ -42,17 +42,3 @@ void mat22Columns(double col0[2], double col1[2], double m[2][2]) {
         m[1][i] = col1[i];
     }
 }
-
-//int main(void){
-//    double n[2][2];
-//    n[0][0] = 0;
-//    n[0][1] = 2;
-//    n[1][0] = 1;
-//    n[1][1] = 3;
-//    double test[2]; 
-//    double v[2] = {2,3};
-//    
-//    mat221Multiply(n,v,test);
-//    mat22Columns(v,test,n);
-//    mat22Print(n);
-//}
