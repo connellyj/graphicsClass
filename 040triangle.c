@@ -1,4 +1,6 @@
-/* Julia Connelly and Kerim Celik, 01/10/2017 */
+/* Julia Connelly and Kerim Celik, 01/12/2017 
+NOTE TO GRADER: we fixed some bugs with intitial triangle rasterizing code
+and refactored some stuff */
     
 #include <stdio.h>
 #include <math.h>
@@ -11,7 +13,7 @@ double findYOnLine(int x, double p1x, double p1y, double p2x, double p2y) {
     else return p1y;
 }
 
-/* Fills the chi input for the given x[] point */
+/* Interpolates to find the chi */
 void getChi(double a[2], double x[2],  double chi[2], 
             double alpha[2], double beta[2], double gamma[2], double m[2][2]){
     double xMinusA[2];
@@ -29,15 +31,14 @@ void getChi(double a[2], double x[2],  double chi[2],
     vecAdd(2, alpha, pPlusQ, chi);
 }
 
-/* Fills the given column with the given color */
+/* Fills the given column with the appropriate color */
 void fillColumn(int x, double minY, double maxY, double rgb[3], double a[2], 
                 double alpha[2], double beta[2], double gamma[2], 
                 double m[2][2], texTexture t) {
-    int y;
     double chi[2];
     double xVec[2];
     xVec[0] = x;
-    for(y = ceil(minY); y <= floor(maxY); ++y) {
+    for(int y = ceil(minY); y <= floor(maxY); ++y) {
         xVec[1] = y;
         getChi(a, xVec, chi, alpha, beta, gamma, m);
         texSample(&t, chi[0], chi[1]);
@@ -46,49 +47,27 @@ void fillColumn(int x, double minY, double maxY, double rgb[3], double a[2],
 }
 
 /* Orders the points so the point with the lowest x value is first,
-        and the rest follow in counterclockwise order.
-        Yes, this is gross, will maybe fix later. */
-void permutePoints(double a[2], double b[2], double c[2], double points[3][2], 
-                   double alpha[3], double beta[3], double gamma[3], double colors[3][2]) {
-    if(c[0] <= a[0] && c[0] <= b[0]) {
-        points[0][0] = c[0];
-        points[0][1] = c[1];
-        points[1][0] = a[0];
-        points[1][1] = a[1];
-        points[2][0] = b[0];
-        points[2][1] = b[1];
-        colors[0][0] = gamma[0];
-        colors[0][1] = gamma[1];
-        colors[1][0] = alpha[0];
-        colors[1][1] = alpha[1];
-        colors[2][0] = beta[0];
-        colors[2][1] = beta[1];
-    }else if(b[0] <= a[0] && b[0] <= c[0]) {
-        points[0][0] = b[0];
-        points[0][1] = b[1];
-        points[1][0] = c[0];
-        points[1][1] = c[1];
-        points[2][0] = a[0];
-        points[2][1] = a[1];
-        colors[0][0] = beta[0];
-        colors[0][1] = beta[1];
-        colors[1][0] = gamma[0];
-        colors[1][1] = gamma[1];
-        colors[2][0] = alpha[0];
-        colors[2][1] = alpha[1];
-    }else if(a[0] <= b[0] && a[0] <= c[0]) {
-        points[0][0] = a[0];
-        points[0][1] = a[1];
-        points[1][0] = b[0];
-        points[1][1] = b[1];
-        points[2][0] = c[0];
-        points[2][1] = c[1];
-        colors[0][0] = alpha[0];
-        colors[0][1] = alpha[1];
-        colors[1][0] = beta[0];
-        colors[1][1] = beta[1];
-        colors[2][0] = gamma[0];
-        colors[2][1] = gamma[1];
+        and the rest follow in counterclockwise order. */
+void permutePoints(double *points[3], double *colors[3]) {
+    int minIndex = 0;
+    for(int i = 1; i < 3; i++) {
+        if(points[i][0] < points[minIndex][0]) minIndex = i;
+    }
+    if(minIndex > 0) {
+        double *tmp[minIndex];
+        double *tmpCol[minIndex];
+        for(int i = 0; i < minIndex; i++) {
+            tmp[i] = points[i];
+            tmpCol[i] = colors[i];
+        }
+        for(int i = minIndex; i < 3; i++) {
+            points[i - minIndex] = points[i];
+            colors[i - minIndex] = colors[i];
+        }
+        for(int i = 0; i < minIndex; i++) {
+            points[i + (3 - minIndex)] = tmp[i];
+            colors[i + (3 - minIndex)] = tmpCol[i];
+        }
     }
 }
 
@@ -105,26 +84,25 @@ void calculateMatrix(double a[2], double b[2], double c[2], double m[2][2]) {
 /* Renders a triangle */
 void triRender(double a[2], double b[2], double c[2], double rgb[3],
               double alpha[2], double beta[2], double gamma[2], texTexture t) {
-    double points[3][2]; 
-    double colors[3][2];
+    double *points[3] = {a, b, c}; 
+    double *colors[3] = {alpha, beta, gamma};
     double m[2][2];
-    permutePoints(a, b, c, points, alpha, beta, gamma, colors);
+    permutePoints(points, colors);
     calculateMatrix(points[0], points[1], points[2], m);
     
     /* Fills in the correct pixels */
-    int x;
     int maxY;
     int minY;
     /* If the second point is the point with the greatest x value... */
     if(points[1][0] >= points[2][0]) {
         /* First half of the triangle */
-        for(x = ceil(points[0][0]); x <= floor(points[2][0]); ++x) {
+        for(int x = ceil(points[0][0]); x <= floor(points[2][0]); ++x) {
             minY = findYOnLine(x, points[0][0], points[0][1], points[1][0], points[1][1]);
             maxY = findYOnLine(x, points[0][0], points[0][1], points[2][0], points[2][1]);
             fillColumn(x, minY, maxY, rgb, points[0], colors[0], colors[1], colors[2], m, t);
         }
         /* Second half of the triangle */
-        for(x = floor(points[2][0]) + 1; x <= floor(points[1][0]); ++x) {
+        for(int x = floor(points[2][0]) + 1; x <= floor(points[1][0]); ++x) {
             minY = findYOnLine(x, points[0][0], points[0][1], points[1][0], points[1][1]);
             maxY = findYOnLine(x, points[1][0], points[1][1], points[2][0], points[2][1]);
             fillColumn(x, minY, maxY, rgb, points[0], colors[0], colors[1], colors[2], m, t);
@@ -132,13 +110,13 @@ void triRender(double a[2], double b[2], double c[2], double rgb[3],
     /* If the second point is the point with the middle x value... */
     }else {
         /* First half of the triangle */
-        for(x = ceil(points[0][0]); x <= floor(points[1][0]); ++x) {
+        for(int x = ceil(points[0][0]); x <= floor(points[1][0]); ++x) {
             minY = findYOnLine(x, points[0][0], points[0][1], points[1][0], points[1][1]);
             maxY = findYOnLine(x, points[0][0], points[0][1], points[2][0], points[2][1]);
             fillColumn(x, minY, maxY, rgb, points[0], colors[0], colors[1], colors[2], m, t);
         }
         /* Second half of the triangle */
-        for(x = floor(points[1][0]) + 1; x <= floor(points[2][0]); ++x) {
+        for(int x = floor(points[1][0]) + 1; x <= floor(points[2][0]); ++x) {
             minY = findYOnLine(x, points[1][0], points[1][1], points[2][0], points[2][1]);
             maxY = findYOnLine(x, points[0][0], points[0][1], points[2][0], points[2][1]);
             fillColumn(x, minY, maxY, rgb, points[0], colors[0], colors[1], colors[2], m, t);

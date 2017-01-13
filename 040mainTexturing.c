@@ -1,4 +1,4 @@
-/* Julia Connelly and Kerim Celik, 01/10/2017 */
+/* Julia Connelly and Kerim Celik, 01/12/2017 */
 
 #include "000pixel.h"
 #include "stb_image.h"
@@ -20,11 +20,11 @@ int main(void) {
         double b[2] = {125, 0}; double y[2] = {375, 250};
         double c[2] = {250, 250}; double z[2] = {500, 500};
         double rgb[3] = {1, 1, 1};
-        double alph[2] = {0, 1};
-        double beta[2] = {0.5, 0};
-        double gamm[2] = {1, 1};
+        double alph[2] = {.3, .7};
+        double beta[2] = {0.5, .3};
+        double gamm[2] = {.7, .7};
         texTexture t;
-        if(texInitializeFile(&t, "test.jpg") != 0){
+        if(texInitializeFile(&t, "test2.png") != 0){
             return 1;
         }
         
