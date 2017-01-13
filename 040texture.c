@@ -190,20 +190,22 @@ void texSample(texTexture *tex, double s, double t) {
 	u = s * (tex->width - 1.0);
 	v = t * (tex->height - 1.0);
 	int i;
-	if (tex->filtering == texQUADRATIC) {        
-        (tex->sample)[0] = 0; (tex->sample)[1] = 0; (tex->sample)[2] = 0;
+	if (tex->filtering == texQUADRATIC) {
+        for(int i = 0; i < tex->texelDim; i++) {
+            (tex->sample)[i] = 0;
+        }
         texGetTexel(tex, ceil(u), ceil(v), tex->aux);
-        vecScale(3, (u - floor(u))*(v - floor(v)), tex->aux, tex->aux);
-        vecAdd(3, tex->aux, tex->sample, tex->sample);
+        vecScale(tex->texelDim, (u - floor(u))*(v - floor(v)), tex->aux, tex->aux);
+        vecAdd(tex->texelDim, tex->aux, tex->sample, tex->sample);
         texGetTexel(tex, ceil(u), floor(v), tex->aux);
-        vecScale(3, (u - floor(u))*(1 - v + floor(v)), tex->aux, tex->aux);
-        vecAdd(3, tex->aux, tex->sample, tex->sample);
+        vecScale(tex->texelDim, (u - floor(u))*(1 - v + floor(v)), tex->aux, tex->aux);
+        vecAdd(tex->texelDim, tex->aux, tex->sample, tex->sample);
         texGetTexel(tex, floor(u), ceil(v), tex->aux);
-        vecScale(3, ( 1 - u + floor(u))*(v - floor(v)), tex->aux, tex->aux);
-        vecAdd(3, tex->aux, tex->sample, tex->sample);
+        vecScale(tex->texelDim, ( 1 - u + floor(u))*(v - floor(v)), tex->aux, tex->aux);
+        vecAdd(tex->texelDim, tex->aux, tex->sample, tex->sample);
         texGetTexel(tex, floor(u), floor(v), tex->aux);
-        vecScale(3, (1 - u + floor(u))*(1 - v + floor(v)), tex->aux, tex->aux);
-        vecAdd(3, tex->aux, tex->sample, tex->sample);
+        vecScale(tex->texelDim, (1 - u + floor(u))*(1 - v + floor(v)), tex->aux, tex->aux);
+        vecAdd(tex->texelDim, tex->aux, tex->sample, tex->sample);
         
 	} else
 		texGetTexel(tex, (int)round(u), (int)round(v), tex->sample);
