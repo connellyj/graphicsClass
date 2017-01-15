@@ -1,3 +1,5 @@
+/* Julia Connelly and Kerim Celik, 01/15/2017 */
+
 #define renATTRDIMBOUND 16
 
 #include <stdio.h>
@@ -42,11 +44,11 @@ int filter = 0;
 
 int draw(int f) {
     /* initialize triangle coords, tex coords, and texTexture */
-    double a[7] = {0, 250, .3, .7, 1, 1, 1}; double x[7] = {250, 500, .3, .7, 1, 1, 1};
-    double b[7] = {125, 0, 0.5, .3, 1, 1, 1}; double y[7] = {375, 250, 0.5, .3, 1, 1, 1};
-    double c[7] = {250, 250, .7, .7, 1, 1, 1}; double z[7] = {500, 500, .7, .7, 1, 1, 1};
-    double unif[3] = {1, 1, 1};
-    r.unifDim = 3; r.texNum = 1; r.attrDim = 4;
+    double a[7] = {0, 250, .3, .7, 1, 0, 0}; double x[7] = {250, 500, .3, .7, 1, 1, 1};
+    double b[7] = {125, 0, 0.5, .3, 0, 0, 1}; double y[7] = {375, 250, 0.5, .3, 1, 1, 1};
+    double c[7] = {250, 250, .7, .7, 0, 1, 0}; double z[7] = {500, 500, .7, .7, 1, 1, 1};
+    double unif[3] = {1, 0, 1};
+    r.unifDim = 3; r.texNum = 1; r.attrDim = 7;
     if(texInitializeFile(&t0, "test2.png") != 0){
         return 1;
     }

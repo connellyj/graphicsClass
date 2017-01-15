@@ -1,7 +1,4 @@
-
-
-
-/*** Public: For header file ***/
+/* Quadratic filtering by Julia Connelly and Kerim Celik, 01/12/2017 */
 
 /* These are constants, that are used to configure how the texture behaves. */
 #define texQUADRATIC 0
