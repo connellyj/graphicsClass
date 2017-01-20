@@ -1,4 +1,4 @@
-/*** Methods filled in by Kerim Celik and Julia Connelly 01/10/2017 ***/
+/*** Methods filled in by Kerim Celik and Julia Connelly 01/20/2017 ***/
 
 #include <stdio.h>
 
@@ -43,14 +43,42 @@ void mat22Columns(double col0[2], double col1[2], double m[2][2]) {
     }
 }
 
+/* Pretty-prints the given matrix, with one line of text per row of matrix. */
+void mat33Print(double m[3][3]) {
+	for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < 3; j++) {
+            printf("%f ", m[j][i]);
+        }
+        printf("\n");
+    }
+}
+
 /* Multiplies the 3x3 matrix m by the 3x3 matrix n. */
-void mat333Multiply(double m[3][3], double n[3][3], double mTimesN[3][3])
+void mat333Multiply(double m[3][3], double n[3][3], double mTimesN[3][3]) {
+    for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < 3; j++) {
+            mTimesN[i][j] = (n[i][0] * m[0][j]) + (n[i][1] * m[1][j]) + (n[i][2] * m[2][j]);
+        }
+    }
+}
 
 /* Multiplies the 3x3 matrix m by the 3x1 matrix v. */
-void mat331Multiply(double m[3][3], double v[3], double mTimesV[3])
+void mat331Multiply(double m[3][3], double v[3], double mTimesV[3]) {
+    for(int i = 0; i < 3; i++) {
+        mTimesV[i] = (m[0][i] * v[0]) + (m[1][i] * v[1]) + (m[2][i] * v[2]);
+    }
+}
 
 /* Builds a 3x3 matrix representing 2D rotation and translation in homogeneous 
 coordinates. More precisely, the transformation first rotates through the angle 
 theta (in radians, counterclockwise), and then translates by the vector (x, y). 
 */
-void mat33Isometry(double theta, double x, double y, double isom[3][3])
+void mat33Isometry(double theta, double x, double y, double isom[3][3]) {
+    double m[3][3] = {{cos(theta), sin(theta), 0}, 
+                      {-1 * sin(theta), cos(theta), 0}, 
+                      {0, 0, 1}};
+    double n[3][3] = {{1, 0, 0}, 
+                      {0, 1, 0}, 
+                      {x, y, 1}};
+    mat333Multiply(n, m, isom);
+}
