@@ -8,7 +8,11 @@
 #include "100vector.c"
 #include "100matrix.c"
 #include "040texture.c"
-#include "090renderer.c"
+#include "110depth.c"
+#include "110renderer.c"
+
+#define screenWIDTH 512
+#define screenHEIGHT 512
 
 #define renVERTNUMBOUND 50
 #define renVARYDIMBOUND 16
@@ -24,8 +28,9 @@
 
 #define renVARYX 0
 #define renVARYY 1
-#define renVARYS 2
-#define renVARYT 3
+#define renVARYZ 2
+#define renVARYS 3
+#define renVARYT 4
 
 #define renUNIFR 0
 #define renUNIFG 1
@@ -61,7 +66,9 @@ void transformVertex(renRenderer *ren, double unif[], double attr[],
         double vary[]) {
     double vary4[4] = {attr[renATTRX], attr[renATTRY], attr[renATTRZ], 1};
     mat441Multiply((double(*)[4])(&unif[renUNIFM]), vary4, vary4);
-    vary[renVARYX] = vary4[renVARYX]; vary[renVARYY] = vary4[renVARYY];
+    vary[renVARYX] = vary4[renVARYX]; 
+    vary[renVARYY] = vary4[renVARYY];
+    vary[renVARYZ] = vary4[renVARYZ];
     vary[renVARYS] = attr[renATTRS]; vary[renVARYT] = attr[renATTRT];
     //animRot is global, make it local as a fix 
     unif[renUNIFALPHA] += animRot;
@@ -74,13 +81,15 @@ matrix to the matrix product P * M. */
 void updateUniform(renRenderer *ren, double unif[], double unifParent[]) {
     double axis[3];
     vec3Spherical(1.0, unif[renUNIFPHI], unif[renUNIFTHETA], axis);
+    vecUnit(3, axis, axis);
     double rot[3][3];
     mat33AngleAxisRotation(unif[renUNIFALPHA], axis, rot);
     double trans[3] = {unif[renUNIFTRANSX], unif[renUNIFTRANSY], unif[renUNIFTRANSZ]};
     if (unifParent == NULL) {
         /* &unif[renUNIFM] is an array containing nine numbers */
         mat44Isometry(rot, trans, (double(*)[4])(&unif[renUNIFM]));
-    }else {
+    }
+    else {
         double m[4][4];
         mat44Isometry(rot, trans, m);
         mat444Multiply((double(*)[4])(&unifParent[renUNIFM]), m, 
@@ -88,7 +97,7 @@ void updateUniform(renRenderer *ren, double unif[], double unifParent[]) {
     }
 }
 
-#include "100triangle.c"
+#include "110triangle.c"
 #include "100mesh.c"
 #include "090scene.c"
 
@@ -97,6 +106,7 @@ texTexture t0, t1;
 renRenderer r;
 meshMesh m0, m1;
 sceneNode top, mid1;
+depthBuffer d;
 int animate = 0;
 
 void initMesh(void) {
@@ -109,6 +119,8 @@ void initRenderer(void) {
     r.colorPixel = colorPixel;
     r.transformVertex = transformVertex;
     r.updateUniform = updateUniform;
+    depthInitialize(&d, screenWIDTH, screenHEIGHT);
+    r.depth = &d;
 }
 
 int initTextures(void) {
@@ -136,6 +148,7 @@ void handleMouseUp(int button, int shiftIsDown, int controlIsDown,
 
 void draw() {
     pixClearRGB(0.0, 0.0, 0.0);
+    depthClearZs(r.depth, -1000);
     sceneRender(&top, &r, NULL);
 }
 
@@ -151,15 +164,12 @@ void handleTimeStep(double oldTime, double newTime) {
 
 int main(void) {
     /* initialize the window */
-    if (pixInitialize(512, 512, "Pixel Graphics") != 0)
+    if (pixInitialize(screenWIDTH, screenHEIGHT, "Pixel Graphics") != 0)
 		return 1;
-	else {
-        /* reset the screen to black */
-		pixClearRGB(0.0, 0.0, 0.0);
-        
+	else {        
         /* Initialize all components needed to create the scene */
         double unif0[25] = {1, 1, 1,
-                            0.78, 0.78, 0,
+                            3.14 / 2, 3.14 / 2, 0,
                             250, 250, 0,
                             1, 0, 0, 0,
                             0, 1, 0, 0,
@@ -180,8 +190,8 @@ int main(void) {
         sceneInitialize(&mid1, &r, unif1, t01, &m1, NULL, NULL);
         sceneInitialize(&top, &r, unif0, t00, &m0, &mid1, NULL);
         
-        /* Render the scene */
-        sceneRender(&top, &r, NULL);
+        /* Draw the scene */
+        draw();
         
         pixSetMouseDownHandler(handleMouseDown);
         pixSetTimeStepHandler(handleTimeStep);
@@ -194,6 +204,7 @@ int main(void) {
         texDestroy(&t0); texDestroy(&t1);
         meshDestroy(&m0); meshDestroy(&m1);
         sceneDestroyRecursively(&top);
+        depthDestroy(&d);
 		return 0;
 	}
 }

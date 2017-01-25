@@ -144,6 +144,7 @@ void mat33AngleAxisRotation(double theta, double axis[3], double rot[3][3]){
                 {0, 0, 1}};
     mat33Add(id, u, rot);
     mat33Add(u2, rot, rot);
+    //mat33Print(rot);
 }
 
 /* Given two length-1 3D vectors u, v that are perpendicular to each other. 
