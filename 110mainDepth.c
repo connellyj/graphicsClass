@@ -65,13 +65,8 @@ void colorPixel(renRenderer *ren, double unif[], texTexture *tex[],
 void transformVertex(renRenderer *ren, double unif[], double attr[], 
         double vary[]) {
     double vary4[4] = {attr[renATTRX], attr[renATTRY], attr[renATTRZ], 1};
-    mat441Multiply((double(*)[4])(&unif[renUNIFM]), vary4, vary4);
-    vary[renVARYX] = vary4[renVARYX]; 
-    vary[renVARYY] = vary4[renVARYY];
-    vary[renVARYZ] = vary4[renVARYZ];
+    mat441Multiply((double(*)[4])(&unif[renUNIFM]), vary4, vary);
     vary[renVARYS] = attr[renATTRS]; vary[renVARYT] = attr[renATTRT];
-    //animRot is global, make it local as a fix 
-    unif[renUNIFALPHA] += animRot;
 }
 
 /* If unifParent is NULL, then sets the uniform matrix to the 
@@ -157,7 +152,7 @@ the time for the current frame and the time for the previous frame. Both times
 are measured in seconds since some distant past time. */ 
 void handleTimeStep(double oldTime, double newTime) {
     if(animate == 1) {
-        animRot = 0.001 * (newTime - oldTime);
+        top.unif[renUNIFALPHA] += 0.5 * (newTime - oldTime);
         draw();
     }
 }
