@@ -1,4 +1,4 @@
-/*** Methods filled in by Kerim Celik and Julia Connelly 01/20/2017 ***/
+/*** Methods filled in by Kerim Celik and Julia Connelly 01/26/2017 ***/
 
 #include <stdio.h>
 
@@ -144,7 +144,6 @@ void mat33AngleAxisRotation(double theta, double axis[3], double rot[3][3]){
                 {0, 0, 1}};
     mat33Add(id, u, rot);
     mat33Add(u2, rot, rot);
-    //mat33Print(rot);
 }
 
 /* Given two length-1 3D vectors u, v that are perpendicular to each other. 
@@ -211,10 +210,9 @@ That is, the isom produced by this function is the inverse to the isom
 produced by mat44Isometry on the same inputs. */
 void mat44InverseIsometry(double rot[3][3], double trans[3], 
         double isom[4][4]){
-    for(int i = 0; i < 3; i++){
-        trans[i] *= -1;
-    }
+    double tmp[3];
+    vecScale(3, -1, trans, tmp);
     double inv[3][3];
     mat33Transpose(rot, inv);
-    mat44Isometry(inv, trans, isom);
+    mat44Isometry(inv, tmp, isom);
 }

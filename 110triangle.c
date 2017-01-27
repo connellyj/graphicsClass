@@ -1,4 +1,4 @@
-/* Julia Connelly and Kerim Celik, 01/20/2017 */
+/* Julia Connelly and Kerim Celik, 01/26/2017 */
 
 /* Returns the y value associated with the given x value on the
     line created by the two given points */
@@ -34,7 +34,8 @@ void fillColumn(int x, double minY, double maxY, double unif[], double a[],
         xVec[1] = y;
         getVary(a, b, c, xVec, vary, m, ren);
         ren->colorPixel(ren, unif, t, vary, rgbz);
-        if(depthGetZ(ren->depth, vary[renVARYX], vary[renVARYY]) < rgbz[3]){
+        // Uses depth buffer to determine what should be drawn in front
+        if(depthGetZ(ren->depth, vary[renVARYX], vary[renVARYY]) < rgbz[3]) {
             pixSetRGB(x, y, rgbz[0], rgbz[1], rgbz[2]);
             depthSetZ(ren->depth, vary[renVARYX], vary[renVARYY], rgbz[3]);
         }
@@ -62,7 +63,7 @@ void permutePoints(double *points[3]) {
     }
 }
 
-/* Calculates a matrix used in interpolation */
+/* Calculates a matrix used in interpolation, also performs backface culling */
 void calculateMatrix(double a[2], double b[2], double c[2], double m[2][2]) {
     vecSubtract(2, b, a, b);
     vecSubtract(2, c, a, c);

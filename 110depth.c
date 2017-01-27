@@ -1,5 +1,4 @@
-
-
+/*** Methods filled in by Kerim Celik and Julia Connelly 01/26/2017 ***/
 
 /*** Creating and destroying ***/
 
