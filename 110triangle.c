@@ -64,12 +64,12 @@ void permutePoints(double *points[3]) {
 }
 
 /* Calculates a matrix used in interpolation, also performs backface culling */
-void calculateMatrix(double a[2], double b[2], double c[2], double m[2][2]) {
+double calculateMatrix(double a[2], double b[2], double c[2], double m[2][2]) {
     vecSubtract(2, b, a, b);
     vecSubtract(2, c, a, c);
     double matrix[2][2];
     mat22Columns(b, c, matrix);
-    if(mat22Invert(matrix, m) <= 0) return;
+    return mat22Invert(matrix, m);
 }
 
 /* Renders a triangle */
@@ -83,7 +83,7 @@ void triRender(double unif[], renRenderer *ren, double a[], double b[], double c
     tempA[0] = points[0][0]; tempA[1] = points[0][1]; 
     tempB[0] = points[1][0]; tempB[1] = points[1][1]; 
     tempC[0] = points[2][0]; tempC[1] = points[2][1];
-    calculateMatrix(tempA, tempB, tempC, m);
+    if(calculateMatrix(tempA, tempB, tempC, m) <= 0) return;
     
     /* Fills in the correct pixels */
     int maxY;

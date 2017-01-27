@@ -123,11 +123,10 @@ renRenderer r;
 meshMesh m0, m1;
 sceneNode top, mid1;
 depthBuffer d;
-int animate = 0;
+double camRot = 0.0;
+int rotate = 0;
 int vertical = 0;
 int horizontal = 0;
-int pan = 0;
-int tilt = 0;
 
 void initMesh(void) {
     meshInitializeSphere(&m0, 50, 40, 20);
@@ -167,12 +166,12 @@ void draw() {
 
 void handleMouseDown(int button, int shiftIsDown, int controlIsDown,
 		int altOptionIsDown, int superCommandIsDown) {
-	animate = 1;
+	rotate = 1;
 }
 
 void handleMouseUp(int button, int shiftIsDown, int controlIsDown,
 		int altOptionIsDown, int superCommandIsDown) {
-	animate = 0;
+	rotate = 0;
 }
 
 void handleKeyDown(int key, int shiftIsDown, int controlIsDown,
@@ -186,16 +185,6 @@ void handleKeyDown(int key, int shiftIsDown, int controlIsDown,
     }else if(key == GLFW_KEY_LEFT) {
         horizontal = -1;
     }
-    // implement camera rotation later
-//    else if(key == GLFW_KEY_W) {
-//        tilt = 1;
-//    }else if(key == GLFW_KEY_A) {
-//        pan = -1;
-//    }else if(key == GLFW_KEY_S) {
-//        tilt = -1;
-//    }else if(key == GLFW_KEY_D) {
-//        pan = 1;
-//    }
 }
 
 void handleKeyUp(int key, int shiftIsDown, int controlIsDown,
@@ -205,17 +194,15 @@ void handleKeyUp(int key, int shiftIsDown, int controlIsDown,
     }else if(key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT) {
         horizontal = 0;
     }
-    //implement camera rotation later
-//    else if(key == GLFW_KEY_W || key == GLFW_KEY_S) {
-//        
-//    }else if(key == GLFW_KEY_A || key == GLFW_KEY_D) {
-//        
-//    }
 }
 
 void handleTimeStep(double oldTime, double newTime) {
-    if(animate == 1) {
-        top.unif[renUNIFALPHA] += 0.5 * (newTime - oldTime);
+    if(rotate == 1) {
+        double axisY[3] = {0, 1, 0};
+        double rot[3][3];
+        camRot += 0.001;
+        mat33AngleAxisRotation(camRot, axisY, rot);
+        mat33Scale(rot, r.cameraRotation, 1);
         draw();
     }
     if(vertical == 1) {
@@ -234,19 +221,6 @@ void handleTimeStep(double oldTime, double newTime) {
         r.cameraTranslation[0] -= 20 * (newTime - oldTime);
         draw();
     }
-    //implement camera rotation later
-//    if(pan == 1) {
-//        draw();
-//    }
-//    if(pan == -1) {
-//        draw();
-//    }
-//    if(tilt == 1) {
-//        draw();
-//    }
-//    if(tilt == -1) {
-//        draw();
-//    }
 }
 
 int main(void) {
