@@ -53,10 +53,10 @@
 #include <stdlib.h>
 #include "000pixel.h"
 #include "100vector.c"
-#include "100matrix.c"
+#include "130matrix.c"
 #include "040texture.c"
 #include "110depth.c"
-#include "120renderer.c"
+#include "130renderer.c"
 #include "110triangle.c"
 #include "100mesh.c"
 #include "090scene.c"
@@ -80,8 +80,12 @@ void transformVertex(renRenderer *ren, double unif[], double attr[],
         double vary[]) {
     double attrXYZ1[4] = {attr[renATTRX], attr[renATTRY], attr[renATTRZ], 1};
     double varyXYZ1[4];
+    double varyClip[4];
     mat441Multiply((double(*)[4])(&unif[renUNIFM]), attrXYZ1, varyXYZ1);
-    mat441Multiply((double(*)[4])(&unif[renUNIFC]), varyXYZ1, vary);
+    mat441Multiply((double(*)[4])(&unif[renUNIFC]), varyXYZ1, varyClip);
+    double scale = 1 / varyClip[3];
+    vecScale(4, scale, varyClip, varyClip);
+    mat441Multiply(ren->viewport, varyClip, vary);
     vary[renVARYS] = attr[renATTRS]; vary[renVARYT] = attr[renATTRT];
 }
 
@@ -128,10 +132,11 @@ int rotate = 0;
 int vertical = 0;
 int horizontal = 0;
 int animate = 0;
+int projType = 0;
 
 void draw() {
     pixClearRGB(0.0, 0.0, 0.0);
-    depthClearZs(r.depth, -1000);
+    depthClearZs(r.depth, -10000);
     renUpdateViewing(&r);
     sceneRender(&top, &r, NULL);
 }
@@ -152,12 +157,21 @@ void handleKeyDown(int key, int shiftIsDown, int controlIsDown,
 		int altOptionIsDown, int superCommandIsDown) {
     if(key == GLFW_KEY_UP) {
         vertical = 1;
-    }else if(key == GLFW_KEY_DOWN) {
+    }
+    if(key == GLFW_KEY_DOWN) {
         vertical = -1;
-    }else if(key == GLFW_KEY_RIGHT) {
+    }
+    if(key == GLFW_KEY_RIGHT) {
         horizontal = 1;
-    }else if(key == GLFW_KEY_LEFT) {
+    }
+    if(key == GLFW_KEY_LEFT) {
         horizontal = -1;
+    }
+    if(key == GLFW_KEY_W) {
+        projType = 1 - projType;
+        if(projType == 1) renSetFrustum(&r, projType, M_PI / 6.0, 10.0, 10.0);
+        else renSetFrustum(&r, projType, M_PI / 6.0, 512.0, 512.0);
+        draw();
     }
 }
 
@@ -165,14 +179,15 @@ void handleKeyUp(int key, int shiftIsDown, int controlIsDown,
 		int altOptionIsDown, int superCommandIsDown) {
     if(key == GLFW_KEY_UP || key == GLFW_KEY_DOWN) {
         vertical = 0;
-    }else if(key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT) {
+    }
+    if(key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT) {
         horizontal = 0;
     }
 }
 
 void handleTimeStep(double oldTime, double newTime) {
     if(rotate == 1) {
-        double axisY[3] = {0, 1, 0};
+        double axisY[3] = {0, 0, 1};
         double rot[3][3];
         camRot += 0.5 * (newTime - oldTime);
         mat33AngleAxisRotation(camRot, axisY, rot);
@@ -226,7 +241,7 @@ int main(void) {
         /* Initialize unifs */
         double unifTop[41] = {1, 1, 1,
                             3.14 / 2, 3.14 / 2, 0,
-                            250, 250, 0,
+                            0, 0, -600,
                             1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,
@@ -237,7 +252,7 @@ int main(void) {
                             0, 0, 0, 1};
         double unifMid[41] = {1, 1, 1,
                             0, 0, 0,
-                            0, 0, 0,
+                            0, 0, -200,
                             1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,
@@ -261,6 +276,12 @@ int main(void) {
         for (int i = 0; i < 3; i++){
             r.cameraRotation[i][i] = 1;
         }
+        int neg = -1;
+        for(int i = 0; i < 6; i++) {
+            r.projection[i] = neg * 250;
+            neg *= -1;
+        }
+        r.projectionType = 0;
         
         /* Initialize textures */
         if(texInitializeFile(&texTiger, "cat.jpg") != 0){
@@ -277,6 +298,7 @@ int main(void) {
         sceneInitialize(&top, &r, unifTop, texTigerArray, &sphere, &mid, NULL);
         
         /* Draw the scene */
+        renSetFrustum(&r, projType, M_PI / 6.0, 512.0, 512.0);
         draw();
         
         /* start the event loop */

@@ -8,7 +8,8 @@ double findYOnLine(int x, double p1[2], double p2[2]) {
 }
 
 /* Interpolates to find the vary of x */
-void getVary(double a[], double b[], double c[], double x[2],  double vary[], double m[2][2], renRenderer *ren){
+void getVary(double a[], double b[], double c[], 
+             double x[2],  double vary[], double m[2][2], renRenderer *ren){
     double aXY[2];
     aXY[0] = a[0]; aXY[1] = a[1];
     vecSubtract(2, x, aXY, aXY);

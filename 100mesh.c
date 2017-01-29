@@ -103,43 +103,20 @@ void transformVertices(meshMesh *mesh, renRenderer *ren, double unif[]) {
 
 /* Renders the mesh. If the mesh and the renderer have differing values for 
 attrDim, then prints an error message and does not render anything. */
-
-// implement for time efficient mesh render later
-//void meshRender(meshMesh *mesh, renRenderer *ren, double unif[], 
-//		texTexture *tex[]) {
-//    if((mesh->attrDim) != (ren->attrDim)) {
-//        printf("Vertices have inconsistent attribute dimensions.");
-//        return;
-//    }
-//    transformVertices(mesh, ren, unif);
-//    int *tempTri;
-//    for(int i = 0; i < mesh->triNum; i++){
-//        tempTri = meshGetTrianglePointer(mesh, i);
-//        triRender(unif, ren, 
-//                  meshGetTransformedVertexPointer(mesh, ren, tempTri[0]),
-//                  meshGetTransformedVertexPointer(mesh, ren, tempTri[1]),
-//                  meshGetTransformedVertexPointer(mesh, ren, tempTri[2]), tex);
-//    }
-//	return;
-//}
-
 void meshRender(meshMesh *mesh, renRenderer *ren, double unif[], 
 		texTexture *tex[]) {
     if((mesh->attrDim) != (ren->attrDim)) {
         printf("Vertices have inconsistent attribute dimensions.");
         return;
     }
-	/* Your job is to implement this function!! */
+    transformVertices(mesh, ren, unif);
     int *tempTri;
-    double a[ren->varyDim];
-    double b[ren->varyDim];
-    double c[ren->varyDim];
     for(int i = 0; i < mesh->triNum; i++){
         tempTri = meshGetTrianglePointer(mesh, i);
-        ren->transformVertex(ren, unif, meshGetVertexPointer(mesh, tempTri[0]), a);
-        ren->transformVertex(ren, unif, meshGetVertexPointer(mesh, tempTri[1]), b);
-        ren->transformVertex(ren, unif, meshGetVertexPointer(mesh, tempTri[2]), c);
-        triRender(unif, ren, a, b, c, tex);
+        triRender(unif, ren, 
+                  meshGetTransformedVertexPointer(mesh, ren, tempTri[0]),
+                  meshGetTransformedVertexPointer(mesh, ren, tempTri[1]),
+                  meshGetTransformedVertexPointer(mesh, ren, tempTri[2]), tex);
     }
 	return;
 }
