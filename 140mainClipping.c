@@ -130,6 +130,7 @@ double camRot = 0.0;
 int rotate = 0;
 int vertical = 0;
 int horizontal = 0;
+int dolley = 0;
 int animate = 0;
 int projType = 0;
 
@@ -167,6 +168,12 @@ void handleKeyDown(int key, int shiftIsDown, int controlIsDown,
         horizontal = -1;
     }
     if(key == GLFW_KEY_W) {
+        dolley = 1;
+    }
+    if(key == GLFW_KEY_S){
+        dolley = -1;
+    }
+    if(key == GLFW_KEY_A) {
         projType = 1 - projType;
         renSetFrustum(&r, projType, M_PI / 6.0, 10.0, 10.0);
         draw();
@@ -180,6 +187,9 @@ void handleKeyUp(int key, int shiftIsDown, int controlIsDown,
     }
     if(key == GLFW_KEY_RIGHT || key == GLFW_KEY_LEFT) {
         horizontal = 0;
+    }
+    if(key == GLFW_KEY_W || key == GLFW_KEY_S) {
+        dolley = 0;
     }
 }
 
@@ -208,8 +218,16 @@ void handleTimeStep(double oldTime, double newTime) {
         r.cameraTranslation[0] -= 20 * (newTime - oldTime);
         draw();
     }
+    if(dolley == 1) {
+        r.cameraTranslation[2] += 20 * (newTime - oldTime);
+        draw();
+    }
+    if(dolley == -1) {
+        r.cameraTranslation[2] -= 20 * (newTime - oldTime);
+        draw();
+    }
     if(animate == 1) {
-        top.unif[renUNIFALPHA] += 0.5 * (newTime - oldTime);
+        top.unif[renUNIFALPHA] += 2 * (newTime - oldTime);
         draw();
     }
 }
@@ -239,7 +257,7 @@ int main(void) {
         /* Initialize unifs */
         double unifTop[41] = {1, 1, 1,
                             M_PI / 2, M_PI / 2, 0,
-                            0, 0, 0,
+                            0, 0, -15,
                             1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,
@@ -250,7 +268,7 @@ int main(void) {
                             0, 0, 0, 1};
         double unifMid[41] = {1, 1, 1,
                             0, 0, 0,
-                            0, 0, 0,
+                            2, 2, 0,
                             1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,
@@ -261,7 +279,7 @@ int main(void) {
                             0, 0, 0, 1};
         
         /* Initialize meshes */
-        meshInitializeSphere(&sphere, 3, 40, 20);
+        meshInitializeSphere(&sphere, 2, 40, 20);
         meshInitializeBox(&cube, 0, 2, 0, 2, 0, 2);
         
         /* Initialize renderer */
@@ -273,11 +291,6 @@ int main(void) {
         r.depth = &d;
         for (int i = 0; i < 3; i++){
             r.cameraRotation[i][i] = 1;
-        }
-        int neg = -1;
-        for(int i = 0; i < 6; i++) {
-            r.projection[i] = neg * 250;
-            neg *= -1;
         }
         
         /* Initialize textures */

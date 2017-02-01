@@ -32,13 +32,15 @@ void fillColumn(int x, double minY, double maxY, double unif[], double a[],
     double xVec[2];
     xVec[0] = x;
     for(int y = ceil(minY); y <= floor(maxY); ++y) {
-        xVec[1] = y;
-        getVary(a, b, c, xVec, vary, m, ren);
-        ren->colorPixel(ren, unif, t, vary, rgbz);
-        // Uses depth buffer to determine what should be drawn in front
-        if(depthGetZ(ren->depth, vary[renVARYX], vary[renVARYY]) < rgbz[3]) {
-            pixSetRGB(x, y, rgbz[0], rgbz[1], rgbz[2]);
-            depthSetZ(ren->depth, vary[renVARYX], vary[renVARYY], rgbz[3]);
+        if(y >= 0 && y <= ren->depth->height) {
+            xVec[1] = y;
+            getVary(a, b, c, xVec, vary, m, ren);
+            ren->colorPixel(ren, unif, t, vary, rgbz);
+            // Uses depth buffer to determine what should be drawn in front
+            if(depthGetZ(ren->depth, vary[renVARYX], vary[renVARYY]) < rgbz[3]) {
+                pixSetRGB(x, y, rgbz[0], rgbz[1], rgbz[2]);
+                depthSetZ(ren->depth, vary[renVARYX], vary[renVARYY], rgbz[3]);
+            }
         }
     }
 }
@@ -93,29 +95,37 @@ void triRender(double unif[], renRenderer *ren, double a[], double b[], double c
     if(points[1][0] >= points[2][0]) {
         /* First half of the triangle */
         for(int x = ceil(points[0][0]); x <= floor(points[2][0]); ++x) {
-            minY = findYOnLine(x, points[0], points[1]);
-            maxY = findYOnLine(x, points[0], points[2]);
-            fillColumn(x, minY, maxY, unif, points[0], points[1], points[2], m, tex, ren);
+            if(x >= 0 && x <= ren->depth->width) {
+                minY = findYOnLine(x, points[0], points[1]);
+                maxY = findYOnLine(x, points[0], points[2]);
+                fillColumn(x, minY, maxY, unif, points[0], points[1], points[2], m, tex, ren);
+            }
         }
         /* Second half of the triangle */
         for(int x = floor(points[2][0]) + 1; x <= floor(points[1][0]); ++x) {
-            minY = findYOnLine(x, points[0], points[1]);
-            maxY = findYOnLine(x, points[1], points[2]);
-            fillColumn(x, minY, maxY, unif, points[0], points[1], points[2], m, tex, ren);
+            if(x >= 0 && x <= ren->depth->width){
+                minY = findYOnLine(x, points[0], points[1]);
+                maxY = findYOnLine(x, points[1], points[2]);
+                fillColumn(x, minY, maxY, unif, points[0], points[1], points[2], m, tex, ren);   
+            }
         }
     /* If the third point is the point with the greatest x value... */
     }else {
         /* First half of the triangle */
         for(int x = ceil(points[0][0]); x <= floor(points[1][0]); ++x) {
-            minY = findYOnLine(x, points[0], points[1]);
-            maxY = findYOnLine(x, points[0], points[2]);
-            fillColumn(x, minY, maxY, unif, points[0], points[1], points[2], m, tex, ren);
+            if(x >= 0 && x <= ren->depth->width) {
+                minY = findYOnLine(x, points[0], points[1]);
+                maxY = findYOnLine(x, points[0], points[2]);
+                fillColumn(x, minY, maxY, unif, points[0], points[1], points[2], m, tex, ren);
+            }
         }
         /* Second half of the triangle */
         for(int x = floor(points[1][0]) + 1; x <= floor(points[2][0]); ++x) {
-            minY = findYOnLine(x, points[1], points[2]);
-            maxY = findYOnLine(x, points[0], points[2]);
-            fillColumn(x, minY, maxY, unif, points[0], points[1], points[2], m, tex, ren);
+            if(x >= 0 && x <= ren->depth->width){
+                minY = findYOnLine(x, points[1], points[2]);
+                maxY = findYOnLine(x, points[0], points[2]);
+                fillColumn(x, minY, maxY, unif, points[0], points[1], points[2], m, tex, ren);
+            }
         }
     }
 }

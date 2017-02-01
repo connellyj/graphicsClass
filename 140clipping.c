@@ -1,19 +1,21 @@
 /* Julia Connelly and Kerim Celik, 01/26/2017 */
 
+/* Transforms the given vector from clip space to screen space */
 void clipClipToScreen(renRenderer *ren, double x[4], double out[4]){
     double scale = 1 / x[3];
-    //printf("%f , %f , %f , %f\n", x[0], x[1], x[2], x[3]);
     vecScale(4, scale, x, x);
     mat441Multiply(ren->viewport, x, out);
 }
 
-int clipIsClipped(double arr[]){
-    if(arr[3] <= 0 || arr[2] > arr[3]){
+/* Returns whether or not the given vertex should be clipped */
+int clipIsClipped(double v[]){
+    if(v[3] <= 0 || v[2] > v[3]){
         return 1;
     }
     return 0;
 }
 
+/* Converts the given vertices to screen space and renders the triangle */
 void clipFinishRender(double unif[], renRenderer *ren, double a[], double b[], double c[], texTexture *tex[]){
     double aXYZW[4] = {a[renVARYX], a[renVARYY], a[renVARYZ], a[renVARYW]};
     double bXYZW[4] = {b[renVARYX], b[renVARYY], b[renVARYZ], b[renVARYW]}; 
@@ -36,7 +38,7 @@ void clipFinishRender(double unif[], renRenderer *ren, double a[], double b[], d
     triRender(unif, ren, v0, v1, v2, tex);
 }
 
-// a is not clipped
+/* Assumes a is not clipped, and creates a new triangle to render */
 void clipFindOneTriangleFromVertices(double unif[], renRenderer *ren, double a[], double b[], double c[], texTexture *tex[]) {
     double tAB = (b[3] - b[2]) / (b[3] - b[2] - a[3] + a[2]);
     double tAC = (c[3] - c[2]) / (c[3] - c[2] - a[3] + a[2]);
@@ -50,7 +52,7 @@ void clipFindOneTriangleFromVertices(double unif[], renRenderer *ren, double a[]
     clipFinishRender(unif, ren, a, newB, newC, tex);
 }
 
-// c is clipped
+/* Assumes c is clipped, and creates two new triangles to render */
 void clipFindTwoTrianglesFromVertices(double unif[], renRenderer *ren, double a[], double b[], double c[], texTexture *tex[]) {
     double tAC = (c[3] - c[2]) / (c[3] - c[2] - a[3] + a[2]);
     double tBC = (c[3] - c[2]) / (c[3] - c[2] - b[3] + b[2]);
@@ -65,6 +67,7 @@ void clipFindTwoTrianglesFromVertices(double unif[], renRenderer *ren, double a[
     clipFinishRender(unif, ren, b, newC2, newC1, tex);
 }
 
+/* Checks all clip cases and renders */
 void clipRender(double unif[], renRenderer *ren, double a[], double b[], double c[], texTexture *tex[]){
     int clippedA = clipIsClipped(a); 
     int clippedB = clipIsClipped(b); 
