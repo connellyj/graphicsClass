@@ -21,6 +21,12 @@
 #define renVARYW 3
 #define renVARYS 4
 #define renVARYT 5
+#define renVARYWORLDX 6
+#define renVARYWORLDY 7
+#define renVARYWORLDZ 8
+#define renWORLDN 9
+#define renWORLDO 10
+#define renWORLDP 11
 
 #define renUNIFR 0
 #define renUNIFG 1
@@ -33,6 +39,12 @@
 #define renUNIFTRANSZ 8
 #define renUNIFM 9
 #define renUNIFC 25
+#define renUNIFLIGHTX 41
+#define renUNIFLIGHTY 42
+#define renUNIFLIGHTZ 43
+#define renUNIFLIGHTR 44
+#define renUNIFLIGHTG 45
+#define renUNIFLIGHTB 46
 
 #define renTEXR 0
 #define renTEXG 1
@@ -66,14 +78,23 @@
 
 /******************** START SHADER ********************/
 
+double max(double a, double b){
+    if(a > b) return a;
+    else return b;
+}
+
 /* Sets rgb, based on the other parameters, which are unaltered. vary is an 
 interpolated varying vector. */
 void colorPixel(renRenderer *ren, double unif[], texTexture *tex[], 
         double vary[], double rgbz[]) {
     texSample(tex[0], vary[renVARYS], vary[renVARYT]);
-    rgbz[0] = tex[0]->sample[renTEXR];
-    rgbz[1] = tex[0]->sample[renTEXG];
-    rgbz[2] = tex[0]->sample[renTEXB];
+    double l[3];
+    vecSubtract(3, &unif[renUNIFLIGHTX], &vary[renVARYWORLDX], l);
+    vecUnit(3, l, l);
+    double d = max(0.0, vecDot(3, &vary[renWORLDN], l));
+    rgbz[0] = tex[0]->sample[renTEXR] * unif[renUNIFR] * unif[renUNIFLIGHTR] * d;
+    rgbz[1] = tex[0]->sample[renTEXG] * unif[renUNIFG] * unif[renUNIFLIGHTG] * d;
+    rgbz[2] = tex[0]->sample[renTEXB] * unif[renUNIFB] * unif[renUNIFLIGHTB] * d;
     rgbz[3] = vary[renVARYZ];
 }
 
@@ -86,6 +107,15 @@ void transformVertex(renRenderer *ren, double unif[], double attr[],
     mat441Multiply((double(*)[4])(&unif[renUNIFM]), attrXYZ1, varyXYZ1);
     mat441Multiply((double(*)[4])(&unif[renUNIFC]), varyXYZ1, vary);
     vary[renVARYS] = attr[renATTRS]; vary[renVARYT] = attr[renATTRT];
+    
+    //lighting
+    double lightXYZ0[4] = {attr[renATTRN], attr[renATTRO], attr[renATTRP], 0};
+    double varyLight[4];
+    mat441Multiply((double(*)[4])(&unif[renUNIFM]), lightXYZ0, varyLight);
+    vecUnit(3, varyLight, varyLight);
+    vary[renWORLDN] = varyLight[0];
+    vary[renWORLDO] = varyLight[1];
+    vary[renWORLDP] = varyLight[2];
 }
 
 /* If unifParent is NULL, then sets the uniform matrix to the 
@@ -109,6 +139,13 @@ void updateUniform(renRenderer *ren, double unif[], double unifParent[]) {
             unif[renUNIFC + j + (4 * i)] = ren->viewing[i][j];
         }
     }
+    
+    // Puts the lighting into unif
+    for(int i = renUNIFLIGHTX; i < renUNIFLIGHTX + 6; i++) {
+        unif[i] = 1.0;
+    }
+    unif[renUNIFLIGHTG] = 0.0;
+    unif[renUNIFLIGHTB] = 0.0;
     
     // Applies transformation
     if (unifParent == NULL) {
@@ -241,9 +278,6 @@ void setEventHandlers() {
 }
 
 int main(void) {
-    // CHECK Z VALUES IN DEPTH BUFFER AND WHERE WE SET THEM
-    // WEIRD STITCHING PROBLEM
-    
     /* initialize the window */
     if (pixInitialize(screenWIDTH, screenHEIGHT, "Pixel Graphics") != 0)
 		return 1;
@@ -255,7 +289,7 @@ int main(void) {
         depthBuffer d;
         
         /* Initialize unifs */
-        double unifTop[41] = {1, 1, 1,
+        double unifTop[47] = {1, 1, 1,
                             M_PI / 2, M_PI / 2, 0,
                             0, 0, -15,
                             1, 0, 0, 0,
@@ -265,8 +299,10 @@ int main(void) {
                             1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,
-                            0, 0, 0, 1};
-        double unifMid[41] = {1, 1, 1,
+                            0, 0, 0, 1,
+                            1, 1, 1,
+                            1, 1, 1};
+        double unifMid[47] = {1, 1, 1,
                             0, 0, 0,
                             2, 2, 0,
                             1, 0, 0, 0,
@@ -276,14 +312,16 @@ int main(void) {
                             1, 0, 0, 0,
                             0, 1, 0, 0,
                             0, 0, 1, 0,
-                            0, 0, 0, 1};
+                            0, 0, 0, 1,
+                            1, 1, 1,
+                            1, 1, 1};
         
         /* Initialize meshes */
         meshInitializeSphere(&sphere, 2, 40, 20);
         meshInitializeBox(&cube, 0, 2, 0, 2, 0, 2);
         
         /* Initialize renderer */
-        r.unifDim = 3 + 3 + 3 + 16 + 16; r.texNum = 2; r.attrDim = 8; r.varyDim = 6;
+        r.unifDim = 3 + 3 + 3 + 16 + 16 + 3 + 3; r.texNum = 2; r.attrDim = 8; r.varyDim = 12;
         r.colorPixel = colorPixel;
         r.transformVertex = transformVertex;
         r.updateUniform = updateUniform;

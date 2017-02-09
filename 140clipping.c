@@ -43,12 +43,12 @@ void clipFindOneTriangleFromVertices(double unif[], renRenderer *ren, double a[]
     double tAB = (b[3] - b[2]) / (b[3] - b[2] - a[3] + a[2]);
     double tAC = (c[3] - c[2]) / (c[3] - c[2] - a[3] + a[2]);
     double newB[ren->varyDim]; double newC[ren->varyDim];
-    vecSubtract(ren->varyDim, b, a, newB);
+    vecSubtract(ren->varyDim, a, b, newB);
     vecScale(ren->varyDim, tAB, newB, newB);
-    vecAdd(ren->varyDim, a, newB, newB);
-    vecSubtract(ren->varyDim, c, a, newC);
+    vecAdd(ren->varyDim, b, newB, newB);
+    vecSubtract(ren->varyDim, a, c, newC);
     vecScale(ren->varyDim, tAC, newC, newC);
-    vecAdd(ren->varyDim, a, newC, newC);
+    vecAdd(ren->varyDim, c, newC, newC);
     clipFinishRender(unif, ren, a, newB, newC, tex);
 }
 
@@ -57,12 +57,12 @@ void clipFindTwoTrianglesFromVertices(double unif[], renRenderer *ren, double a[
     double tAC = (c[3] - c[2]) / (c[3] - c[2] - a[3] + a[2]);
     double tBC = (c[3] - c[2]) / (c[3] - c[2] - b[3] + b[2]);
     double newC1[ren->varyDim]; double newC2[ren->varyDim];
-    vecSubtract(ren->varyDim, c, a, newC1);
+    vecSubtract(ren->varyDim, a, c, newC1);
     vecScale(ren->varyDim, tAC, newC1, newC1);
-    vecAdd(ren->varyDim, a, newC1, newC1);
-    vecSubtract(ren->varyDim, c, b, newC2);
+    vecAdd(ren->varyDim, c, newC1, newC1);
+    vecSubtract(ren->varyDim, b, c, newC2);
     vecScale(ren->varyDim, tBC, newC2, newC2);
-    vecAdd(ren->varyDim, b, newC2, newC2);
+    vecAdd(ren->varyDim, c, newC2, newC2);
     clipFinishRender(unif, ren, a, b, newC1, tex);
     clipFinishRender(unif, ren, b, newC2, newC1, tex);
 }

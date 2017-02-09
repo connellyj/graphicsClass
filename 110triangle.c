@@ -37,7 +37,7 @@ void fillColumn(int x, double minY, double maxY, double unif[], double a[],
             getVary(a, b, c, xVec, vary, m, ren);
             ren->colorPixel(ren, unif, t, vary, rgbz);
             // Uses depth buffer to determine what should be drawn in front
-            if(depthGetZ(ren->depth, vary[renVARYX], vary[renVARYY]) < rgbz[3]) {
+            if(depthGetZ(ren->depth, vary[renVARYX], vary[renVARYY]) <= rgbz[3]) {
                 pixSetRGB(x, y, rgbz[0], rgbz[1], rgbz[2]);
                 depthSetZ(ren->depth, vary[renVARYX], vary[renVARYY], rgbz[3]);
             }
