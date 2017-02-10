@@ -105,8 +105,10 @@ void colorPixel(renRenderer *ren, double unif[], texTexture *tex[],
         dot *= 2;
         vecScale(3, dot, &vary[renWORLDN], r);
         vecSubtract(3, r, l, r);
-        //camera is suspicious
-        s = max(0, vecDot(3, r, &unif[renUNIFCAMX]));
+        double c[3];
+        vecSubtract(3, &unif[renUNIFCAMX], &vary[renVARYWORLDX], c);
+        vecUnit(3, c, c);
+        s = max(0, vecDot(3, r, c));
         s = pow(s, 1.0);
     }
     d += s + 0.1;
@@ -181,6 +183,7 @@ void updateUniform(renRenderer *ren, double unif[], double unifParent[]) {
         mat44Isometry(rot, trans, m);
         mat444Multiply((double(*)[4])(&unifParent[renUNIFM]), m, 
             (double(*)[4])(&unif[renUNIFM]));
+        //vecCopy(9, unifParent + renUNIFLIGHTX, unif + renUNIFLIGHTX);
     }
 }
 
@@ -327,7 +330,7 @@ int main(void) {
                             0, 0, 0, 1,
                             1, 1, 1,
                             1, 1, 1,
-                            0, 0, 0};
+                            0.5, 0.5, 0};
         double unifMid[50] = {1, 1, 1,
                             0, 0, 0,
                             2, 2, 0,
@@ -341,7 +344,7 @@ int main(void) {
                             0, 0, 0, 1,
                             1, 1, 1,
                             1, 1, 1,
-                            0, 0, 0};
+                            0.5, 0.5, 0};
         
         /* Initialize meshes */
         meshInitializeSphere(&sphere, 2, 40, 20);

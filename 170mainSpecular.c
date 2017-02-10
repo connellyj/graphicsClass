@@ -105,7 +105,10 @@ void colorPixel(renRenderer *ren, double unif[], texTexture *tex[],
         dot *= 2;
         vecScale(3, dot, &vary[renWORLDN], r);
         vecSubtract(3, r, l, r);
-        s = max(0, vecDot(3, r, &unif[renUNIFCAMX]));
+        double c[3];
+        vecSubtract(3, &unif[renUNIFCAMX], &vary[renVARYWORLDX], c);
+        vecUnit(3, c, c);
+        s = max(0, vecDot(3, r, c));
         s = pow(s, 1.0);
     }
     d += s;
@@ -322,7 +325,7 @@ int main(void) {
                             0, 0, 0, 1,
                             1, 1, 1,
                             1, 1, 1,
-                            0, 0, 0};
+                            0.5, 0.5, 0};
         double unifMid[50] = {1, 1, 1,
                             0, 0, 0,
                             2, 2, 0,
@@ -336,7 +339,7 @@ int main(void) {
                             0, 0, 0, 1,
                             1, 1, 1,
                             1, 1, 1,
-                            0, 0, 0};
+                            0.5, 0.5, 0};
         
         /* Initialize meshes */
         meshInitializeSphere(&sphere, 2, 40, 20);

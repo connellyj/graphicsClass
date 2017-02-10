@@ -105,10 +105,10 @@ void colorPixel(renRenderer *ren, double unif[], texTexture *tex[],
         dot *= 2;
         vecScale(3, dot, &vary[renWORLDN], r);
         vecSubtract(3, r, l, r);
-        //camera is suspicious
-        double *camUnit = &unif[renUNIFCAMX];
-        vecUnit(3, camUnit, camUnit);
-        s = max(0, vecDot(3, r, camUnit));
+        double c[3];
+        vecSubtract(3, &unif[renUNIFCAMX], &vary[renVARYWORLDX], c);
+        vecUnit(3, c, c);
+        s = max(0, vecDot(3, r, c));
         s = pow(s, 1.0);
     }
     d += s + 0.1;
@@ -143,14 +143,18 @@ rotation-translation M described by the other uniforms. If unifParent is not
 NULL, but instead contains a rotation-translation P, then sets the uniform 
 matrix to the matrix product P * M. */
 void updateUniform(renRenderer *ren, double unif[], double unifParent[]) {
-    double m[4][4];
-    mat44Isometry(ren->cameraRotation, ren->cameraTranslation, m);
-    double zero[4] = {0, 0, 0, 1};
-    double cam[4];
-    mat441Multiply(m, zero, cam);
-    unif[renUNIFCAMX] = cam[0];
-    unif[renUNIFCAMY] = cam[1];
-    unif[renUNIFCAMZ] = cam[2];
+//    double m[4][4];
+//    mat44Isometry(ren->cameraRotation, ren->cameraTranslation, m);
+//    double zero[4] = {0, 0, 0, 1};
+//    double cam[4];
+//    mat441Multiply(m, zero, cam);
+//    unif[renUNIFCAMX] = cam[0];
+//    unif[renUNIFCAMY] = cam[1];
+//    unif[renUNIFCAMZ] = cam[2];
+    // not sure if work but maybe
+    unif[renUNIFCAMX] = ren->cameraTranslation[0];
+    unif[renUNIFCAMY] = ren->cameraTranslation[1];
+    unif[renUNIFCAMZ] = ren->cameraTranslation[2];
     
     // Finds the 3x3 rotation matrix based on input from unif
     double axis[3];
@@ -173,9 +177,9 @@ void updateUniform(renRenderer *ren, double unif[], double unifParent[]) {
     for(int i = renUNIFLIGHTX; i < renUNIFLIGHTX + 6; i++) {
         unif[i] = 1.0;
     }
-    unif[renUNIFLIGHTX] = cam[0];
-    unif[renUNIFLIGHTY] = cam[1];
-    unif[renUNIFLIGHTZ] = cam[2];
+//    unif[renUNIFLIGHTX] = cam[0];
+//    unif[renUNIFLIGHTY] = cam[1];
+//    unif[renUNIFLIGHTZ] = cam[2];
     
     // Applies transformation
     if (unifParent == NULL) {
@@ -262,7 +266,7 @@ void handleKeyUp(int key, int shiftIsDown, int controlIsDown,
 
 void handleTimeStep(double oldTime, double newTime) {
     if(rotate == 1) {
-        double axisY[3] = {0, 0, 1};
+        double axisY[3] = {0, 1, 0};
         double rot[3][3];
         camRot += 0.5 * (newTime - oldTime);
         mat33AngleAxisRotation(camRot, axisY, rot);
@@ -332,7 +336,7 @@ int main(void) {
                             0, 0, 0, 1,
                             1, 1, 1,
                             1, 1, 1,
-                            0, 0, 0};
+                            0.5, 0.5, 0};
         double unifMid[50] = {1, 1, 1,
                             0, 0, 0,
                             2, 2, 0,
@@ -346,7 +350,7 @@ int main(void) {
                             0, 0, 0, 1,
                             1, 1, 1,
                             1, 1, 1,
-                            0, 0, 0};
+                            0.5, 0.5, 0};
         
         /* Initialize meshes */
         meshInitializeSphere(&sphere, 2, 40, 20);
