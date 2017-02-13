@@ -88,7 +88,7 @@ void meshGLInitialize(meshGLMesh *meshGL, meshMesh *mesh) {
 	meshGL->triNum = mesh->triNum;
     meshGL->vertNum = mesh->vertNum;
     meshGL->attrDim = mesh->attrDim;
-    glGenBuffers(2, buffers);
+    glGenBuffers(2, meshGL->buffers);
 	glBindBuffer(GL_ARRAY_BUFFER, meshGL->buffers[0]);
 	glBufferData(GL_ARRAY_BUFFER, (meshGL->vertNum) * (meshGL->attrDim) * sizeof(GLdouble),
 		(GLvoid *)(mesh->vert), GL_STATIC_DRAW);
@@ -108,21 +108,20 @@ void meshGLRender(meshGLMesh *meshGL, GLuint attrNum, GLuint attrDims[],
     for(int i = 0; i < attrNum; i++) {
         glEnableVertexAttribArray(attrLocs[i]);
     }
-	glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, meshGL->buffers[0]);
+    int buffOffset = 0;
     for(int i = 0; i < attrNum; i++) {
-        
+        glVertexAttribPointer(attrLocs[i], attrDims[i], GL_DOUBLE, GL_FALSE, 
+		  meshGL->attrDim * sizeof(GLdouble), BUFFER_OFFSET(buffOffset));
+        buffOffset += (attrDims[i] * sizeof(GLdouble));
     }
-    
-	glVertexAttribPointer(attrLocs[0], 3, GL_DOUBLE, GL_FALSE, 
-		attrDim * sizeof(GLdouble), BUFFER_OFFSET(0));
-	glVertexAttribPointer(attrLocs[1], 3, GL_DOUBLE, GL_FALSE, 
-		attrDim * sizeof(GLdouble), BUFFER_OFFSET(3 * sizeof(GLdouble)));
 	/* Draw the triangles, exactly as in the preceding tutorial. */
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
-	glDrawElements(GL_TRIANGLES, triNum * 3, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, meshGL->buffers[1]);
+	glDrawElements(GL_TRIANGLES, (meshGL->triNum) * 3, GL_UNSIGNED_INT, BUFFER_OFFSET(0));
 	/* Disable the attributes when finished with them. */
-	glDisableVertexAttribArray(attrLocs[0]);
-	glDisableVertexAttribArray(attrLocs[1]);
+    for(int i = 0; i < attrNum; i++) {
+        glDisableVertexAttribArray(attrLocs[i]);
+    }
 }
 
 /* Deallocates the resources backing the initialized OpenGL mesh. */
