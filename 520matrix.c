@@ -6,7 +6,7 @@
 void mat22Print(GLdouble m[2][2]) {
 	for(int i = 0; i < 2; i++) {
         for(int j = 0; j < 2; j++) {
-            printf("%f ", m[j][i]);
+            printf("%f ", m[i][j]);
         }
         printf("\n");
     }
@@ -31,15 +31,15 @@ GLdouble mat22Invert(GLdouble m[2][2], GLdouble mInv[2][2]) {
 The output should not */
 void mat221Multiply(GLdouble m[2][2], GLdouble v[2], GLdouble mTimesV[2]) {
 	for(int i = 0; i < 2; i++) {
-        mTimesV[i] = (m[0][i] * v[0]) + (m[1][i] * v[1]);
+        mTimesV[i] = (m[i][0] * v[0]) + (m[i][1] * v[1]);
     }
 }
 
 /* Fills the matrix m from its two columns. */
 void mat22Columns(GLdouble col0[2], GLdouble col1[2], GLdouble m[2][2]) {
 	for(int i = 0; i < 2; i++) {
-        m[0][i] = col0[i];
-        m[1][i] = col1[i];
+        m[i][0] = col0[i];
+        m[i][1] = col1[i];
     }
 }
 
@@ -47,7 +47,7 @@ void mat22Columns(GLdouble col0[2], GLdouble col1[2], GLdouble m[2][2]) {
 void mat33Print(GLdouble m[3][3]) {
 	for(int i = 0; i < 3; i++) {
         for(int j = 0; j < 3; j++) {
-            printf("%f ", m[j][i]);
+            printf("%f ", m[i][j]);
         }
         printf("\n");
     }
@@ -57,7 +57,7 @@ void mat33Print(GLdouble m[3][3]) {
 void mat333Multiply(GLdouble m[3][3], GLdouble n[3][3], GLdouble mTimesN[3][3]) {
     for(int i = 0; i < 3; i++) {
         for(int j = 0; j < 3; j++) {
-            mTimesN[i][j] = (n[i][0] * m[0][j]) + (n[i][1] * m[1][j]) + (n[i][2] * m[2][j]);
+            mTimesN[i][j] = (n[0][j] * m[i][0]) + (n[1][j] * m[i][1]) + (n[2][j] * m[i][2]);
         }
     }
 }
@@ -65,7 +65,7 @@ void mat333Multiply(GLdouble m[3][3], GLdouble n[3][3], GLdouble mTimesN[3][3]) 
 /* Multiplies the 3x3 matrix m by the 3x1 matrix v. */
 void mat331Multiply(GLdouble m[3][3], GLdouble v[3], GLdouble mTimesV[3]) {
     for(int i = 0; i < 3; i++) {
-        mTimesV[i] = (m[0][i] * v[0]) + (m[1][i] * v[1]) + (m[2][i] * v[2]);
+        mTimesV[i] = (m[i][0] * v[0]) + (m[i][1] * v[1]) + (m[i][2] * v[2]);
     }
 }
 
@@ -74,12 +74,12 @@ coordinates. More precisely, the transformation first rotates through the angle
 theta (in radians, counterclockwise), and then translates by the vector (x, y). 
 */
 void mat33Isometry(GLdouble theta, GLdouble x, GLdouble y, GLdouble isom[3][3]) {
-    GLdouble m[3][3] = {{cos(theta), sin(theta), 0}, 
-                      {-1 * sin(theta), cos(theta), 0}, 
+    GLdouble m[3][3] = {{cos(theta), -1 * sin(theta), 0}, 
+                      {sin(theta), cos(theta), 0}, 
                       {0, 0, 1}};
-    GLdouble n[3][3] = {{1, 0, 0}, 
-                      {0, 1, 0}, 
-                      {x, y, 1}};
+    GLdouble n[3][3] = {{1, 0, x}, 
+                        {0, 1, y}, 
+                        {0, 0, 1}};
     mat333Multiply(n, m, isom);
 }
 
@@ -120,10 +120,10 @@ void mat33Scale(GLdouble a[3][3], GLdouble scaled[3][3], GLdouble s){
  * three dim-3 vectors and using each of them as the values of a column
  */
 void mat33Columns(GLdouble col0[3], GLdouble col1[3], GLdouble col2[3], GLdouble m[3][3]){
-    for(int i = 0; i < 2; i++) {
-        m[0][i] = col0[i];
-        m[1][i] = col1[i];
-        m[2][i] = col2[i];
+    for(int i = 0; i < 3; i++) {
+        m[i][0] = col0[i];
+        m[i][1] = col1[i];
+        m[i][2] = col2[i];
     }
 }
 
@@ -132,16 +132,16 @@ void mat33Columns(GLdouble col0[3], GLdouble col1[3], GLdouble col2[3], GLdouble
 rotation matrix for the rotation about that axis through that angle. Based on 
 Rodrigues' rotation formula R = I + (sin theta) U + (1 - cos theta) U^2. */
 void mat33AngleAxisRotation(GLdouble theta, GLdouble axis[3], GLdouble rot[3][3]){
-    GLdouble u[3][3] = {{0, axis[2], -axis[1]},
-                      {-axis[2], 0, axis[0]},
-                      {axis[1], -axis[0], 0}};
+    GLdouble u[3][3] = {{0, -axis[2], axis[1]},
+                        {axis[2], 0, -axis[0]},
+                        {-axis[1], axis[0], 0}};
     GLdouble u2[3][3];
     mat333Multiply(u, u, u2);
     mat33Scale(u, u, sin(theta));
     mat33Scale(u2, u2, 1 - cos(theta));
     GLdouble id[3][3] = {{1, 0, 0},
-                {0, 1, 0},
-                {0, 0, 1}};
+                         {0, 1, 0},
+                         {0, 0, 1}};
     mat33Add(id, u, rot);
     mat33Add(u2, rot, rot);
 }
@@ -163,7 +163,7 @@ void mat33BasisRotation(GLdouble u[3], GLdouble v[3], GLdouble a[3], GLdouble b[
 void mat44Print(GLdouble m[4][4]) {
 	for(int i = 0; i < 4; i++) {
         for(int j = 0; j < 4; j++) {
-            printf("%f ", m[j][i]);
+            printf("%f ", m[i][j]);
         }
         printf("\n");
     }
@@ -173,8 +173,8 @@ void mat44Print(GLdouble m[4][4]) {
 void mat444Multiply(GLdouble m[4][4], GLdouble n[4][4], GLdouble mTimesN[4][4]) {
     for(int i = 0; i < 4; i++) {
         for(int j = 0; j < 4; j++) {
-            mTimesN[i][j] = (n[i][0] * m[0][j]) + (n[i][1] * m[1][j])
-                + (n[i][2] * m[2][j]) + (n[i][3] * m[3][j]);
+            mTimesN[i][j] = (n[0][j] * m[i][0]) + (n[1][j] * m[i][1])
+                + (n[2][j] * m[i][2]) + (n[3][j] * m[i][3]);
         }
     }
 }
@@ -182,8 +182,8 @@ void mat444Multiply(GLdouble m[4][4], GLdouble n[4][4], GLdouble mTimesN[4][4]) 
 /* Multiplies m by v, placing the answer in mTimesV. */
 void mat441Multiply(GLdouble m[4][4], GLdouble v[4], GLdouble mTimesV[4]) {
     for(int i = 0; i < 4; i++) {
-        mTimesV[i] = (m[0][i] * v[0]) + (m[1][i] * v[1])
-            + (m[2][i] * v[2]) + (m[3][i] * v[3]);
+        mTimesV[i] = (m[i][0] * v[0]) + (m[i][1] * v[1])
+            + (m[i][2] * v[2]) + (m[i][3] * v[3]);
     }
 }
 
@@ -196,10 +196,10 @@ void mat44Isometry(GLdouble rot[3][3], GLdouble trans[3], GLdouble isom[4][4]) {
         }
     }
     for(int i = 0; i < 3; i++){
-        isom[3][i] = trans[i];
+        isom[i][3] = trans[i];
     }
     for(int i = 0; i < 3; i++){
-        isom[i][3] = 0;
+        isom[3][i] = 0;
     }
     isom[3][3] = 1;
 }
@@ -213,8 +213,10 @@ void mat44InverseIsometry(GLdouble rot[3][3], GLdouble trans[3],
     GLdouble tmp[3];
     vecScale(3, -1, trans, tmp);
     GLdouble inv[3][3];
+    GLdouble tmp2[3];
     mat33Transpose(rot, inv);
-    mat44Isometry(inv, tmp, isom);
+    mat331Multiply(inv, tmp, tmp2);
+    mat44Isometry(inv, tmp2, isom);
 }
 
 /* Builds a 4x4 matrix representing orthographic projection with a boxy viewing 
@@ -232,9 +234,9 @@ void mat44Orthographic(GLdouble left, GLdouble right, GLdouble bottom, GLdouble 
     proj[0][0] = 2 / (right - left);
     proj[1][1] = 2 / (top - bottom);
     proj[2][2] = 2 / (near - far);
-    proj[3][0] = (-right - left) / (right - left);
-    proj[3][1] = (-top - bottom) / (top - bottom);
-    proj[3][2] = (-near - far) / (near - far);
+    proj[0][3] = (-right - left) / (right - left);
+    proj[1][3] = (-top - bottom) / (top - bottom);
+    proj[2][3] = (-near - far) / (near - far);
     proj[3][3] = 1;
 }
 
@@ -249,8 +251,8 @@ void mat44Viewport(GLdouble width, GLdouble height, GLdouble view[4][4]){
     view[0][0] = (width - 1) / 2;
     view[1][1] = (height - 1) / 2;
     view[2][2] = 1;
-    view[3][0] = (width - 1) / 2;
-    view[3][1] = (height - 1) / 2;
+    view[0][3] = (width - 1) / 2;
+    view[1][3] = (height - 1) / 2;
     view[3][3] = 1;
 }
 
@@ -271,8 +273,8 @@ void mat44Perspective(GLdouble left, GLdouble right, GLdouble bottom, GLdouble t
     proj[2][2] = (-near - far) / (near - far);
     proj[0][2] = (right + left) / (right - left);
     proj[1][2] = (top + bottom) / (top - bottom);
-    proj[2][3] = -1;
-    proj[3][2] = (2 * near * far) / (near - far);
+    proj[3][2] = -1;
+    proj[2][3] = (2 * near * far) / (near - far);
 }
 
 /* We want to pass matrices into OpenGL, but there are two obstacles. First, 

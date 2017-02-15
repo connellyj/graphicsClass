@@ -132,7 +132,7 @@ void camRender(camCamera *cam, GLint viewingLoc) {
 	if (cam->projectionType == camORTHOGRAPHIC) {
 	    mat44Orthographic(cam->projection[camPROJL], cam->projection[camPROJR], cam->projection[camPROJB],
 	                    cam->projection[camPROJT], cam->projection[camPROJF], cam->projection[camPROJN], proj);
-	    mat444Multiply(proj,camInv,projCamInv);
+	    mat444Multiply(proj, camInv, projCamInv);
   	}
   	else if (cam->projectionType == camPERSPECTIVE) {
 	    mat44Perspective(cam->projection[camPROJL], cam->projection[camPROJR], cam->projection[camPROJB],
