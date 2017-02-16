@@ -149,29 +149,31 @@ void sceneRender(sceneNode *node, GLdouble parent[4][4], GLint modelingLoc,
 		GLuint attrNum, GLuint attrDims[], GLint attrLocs[]) {
     if(node == NULL) return;
 	/* Set the uniform modeling matrix. */
-    GLfloat modeling[4][4], modelTimesParent[4][4];
-    double model[4][4]; 
+    GLfloat modeling[4][4];
+    GLdouble parentTimesModel[4][4], model[4][4]; 
 	mat44Isometry(node->rotation, node->translation, model);
-	mat44OpenGL(model, modeling);
-    mat444Multiply(parent, modeling, modelTimesParent);
-	glUniformMatrix4fv(modelingLoc, 1, GL_FALSE, (GLfloat *)modelTimesParent);
+    mat444Multiply(parent, model, parentTimesModel);
+	mat44OpenGL(parentTimesModel, modeling);
+	glUniformMatrix4fv(modelingLoc, 1, GL_FALSE, (GLfloat *)modeling);
 	/* Set the other uniforms. The casting from double to float is annoying. */
     int buffOffset = 0;
     for(int i = 0; i < attrNum; i++) {
+        GLfloat tmp[unifDims[i]];
+        vecOpenGL(unifDims[i], node->unif, tmp);
         if(unifDims[i] == 1){
-            glUniform1fv(unifLocs[i], 1, (GLfloat *)(node->unif));
+            glUniform1fv(unifLocs[i], 1, tmp);
         }else if(unifDims[i] == 2) {
-            glUniform2fv(unifLocs[i], 1, (GLfloat *)(node->unif));
+            glUniform2fv(unifLocs[i], 1, tmp);
         }else if(unifDims[i] == 3) {
-            glUniform3fv(unifLocs[i], 1, (GLfloat *)(node->unif));
+            glUniform3fv(unifLocs[i], 1, tmp);
         }else if(unifDims[i] == 4) {
-            glUniform4fv(unifLocs[i], 1, (GLfloat *)(node->unif));
+            glUniform4fv(unifLocs[i], 1, tmp);
         }
         buffOffset += (unifDims[i] * sizeof(GLdouble));
     }
 	/* Render the mesh, the children, and the younger siblings. */
 	meshGLRender(node->meshGL, attrNum, attrDims, attrLocs);
-    sceneRender(node->firstChild, (GLdouble *)modelTimesParent, modelingLoc,
+    sceneRender(node->firstChild, parentTimesModel, modelingLoc,
                     unifNum, unifDims, unifLocs,
                     attrNum, attrDims, attrLocs);
     sceneRender(node->nextSibling, parent, modelingLoc,
