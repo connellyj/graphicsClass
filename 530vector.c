@@ -1,4 +1,4 @@
-/*** Methods filled in by Julia Connelly and Kerim Celik 01/26/2016 ***/
+/*** Methods filled in by Julia Connelly and Kerim Celik 02/17/2016 ***/
 
 #include <stdio.h>
 
@@ -95,6 +95,7 @@ void vec3Spherical(GLdouble rho, GLdouble phi, GLdouble theta, GLdouble v[3]){
     v[2] = rho * cos(phi);
 }
 
+/* Converts a GLdouble vector to GLfloats */
 void vecOpenGL(int dim, GLdouble v[], GLfloat openGL[]) {
 	for (int i = 0; i < dim; i += 1)
 		openGL[i] = v[i];

@@ -1,5 +1,4 @@
-
-/* Used by Julia Connelly and Kerim Celik, 01/26/2017 */
+/* camRender by Julia Connelly and Kerim Celik, 02/17/2017 */
 
 
 /* This file offers a camera data type that can be used in two ways. The 
@@ -126,9 +125,7 @@ is, P C^-1, in the notation of our software graphics engine. */
 void camRender(camCamera *cam, GLint viewingLoc) {
     GLdouble camInv[4][4], proj[4][4], projCamInv[4][4];
 	GLfloat viewing[4][4];
-
 	mat44InverseIsometry(cam->rotation, cam->translation, camInv);
-
 	if (cam->projectionType == camORTHOGRAPHIC) {
 	    mat44Orthographic(cam->projection[camPROJL], cam->projection[camPROJR], cam->projection[camPROJB],
 	                    cam->projection[camPROJT], cam->projection[camPROJF], cam->projection[camPROJN], proj);
@@ -139,7 +136,6 @@ void camRender(camCamera *cam, GLint viewingLoc) {
 	                    cam->projection[camPROJT], cam->projection[camPROJF], cam->projection[camPROJN], proj);
 	    mat444Multiply(proj, camInv, projCamInv);
   	}
-
 	mat44OpenGL(projCamInv, viewing);
 	glUniformMatrix4fv(viewingLoc, 1, GL_FALSE, (GLfloat *)viewing);
 }

@@ -1,4 +1,4 @@
-/* OpenGL methods filled in by Julia Connelly and Kerim Celik, 02/13/2017 */
+/* OpenGL methods filled in by Julia Connelly and Kerim Celik, 02/17/2017 */
 
 /*** Creating and destroying ***/
 

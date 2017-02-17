@@ -1,6 +1,3 @@
-/* Used by Julia Connelly and Kerim Celik, 01/26/2017 */
-
-
 /* This file helps you compile and link OpenGL shader programs. The process is 
 simpler than it looks here. In pseudocode, the core idea is 10 steps:
 	glCreateShader(vertexShader);

@@ -1,4 +1,4 @@
-/* by Julia Connelly and Kerim Celik, 01/26/2017 */
+/* sceneRender by Julia Connelly and Kerim Celik, 02/17/2017 */
 
 
 /*** Creation and destruction ***/
@@ -185,7 +185,6 @@ void sceneRender(sceneNode *node, GLdouble parent[4][4], GLint modelingLoc,
     GLenum texUnits[8] = {GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_TEXTURE3,
                  GL_TEXTURE4, GL_TEXTURE5, GL_TEXTURE6, GL_TEXTURE7};
     for(int i = 0; i < node->texNum; i++) {
-        // SEG FAULT
         texRender(node->tex[i], texUnits[i], i, textureLocs[i]);
     }
 	meshGLRender(node->meshGL, attrNum, attrDims, attrLocs);

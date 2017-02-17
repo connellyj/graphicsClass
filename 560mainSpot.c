@@ -1,3 +1,8 @@
+/* Written by Julia Connelly and Kerim Celik, 02/17/2017 */
+/* NOTE: IF IT DOESN'T APPEAR TO BE WORKING, TRY RECOMPILING
+    WE'RE DOING SOMETHING WEIRD WITH MEMORY, BUT IT DOES WORK 
+    SOMETIMES */
+
 /* On macOS, compile with...
     clang 530mainScene.c -lglfw -framework OpenGL
 */
