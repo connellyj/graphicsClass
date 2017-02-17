@@ -1,5 +1,5 @@
 /* On macOS, compile with...
-    clang 530mainScene.c -lglfw -framework OpenGL
+    clang 500texturing.c -lglfw -framework OpenGL
 */
 
 #include <stdio.h>
@@ -18,15 +18,12 @@
 
 GLdouble alpha = 0.0;
 GLuint program;
-GLint attrLocs[3];
 GLint viewingLoc, modelingLoc;
-GLint unifLocs[1];
-GLint textureLocs[2];
+GLint attrLocs[3], textureLocs[2], unifLocs[1];
 camCamera cam;
-/* Allocate three meshes and three scene graph nodes. */
-meshGLMesh rootMesh, childMesh, siblingMesh;
-sceneNode rootNode, childNode, siblingNode;
-texTexture tiger, huskies, crown, pattern;
+sceneNode root, child;
+meshGLMesh capsule, box;
+texTexture texA, texB, texC;
 
 void handleError(int error, const char *description) {
 	fprintf(stderr, "handleError: %d\n%s\n", error, description);
@@ -34,7 +31,7 @@ void handleError(int error, const char *description) {
 
 void handleResize(GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
-	camSetWidthHeight(&cam, width, height);
+    camSetWidthHeight(&cam, width, height);
 }
 
 void handleKey(GLFWwindow *window, int key, int scancode, int action,
@@ -61,75 +58,36 @@ void handleKey(GLFWwindow *window, int key, int scancode, int action,
 	}
 }
 
-/* Returns 0 on success, non-zero on failure. Warning: If initialization fails 
-midway through, then does not properly deallocate all resources. But that's 
-okay, because the program terminates almost immediately after this function 
-returns. */
 int initializeScene(void) {
-	/* Initialize meshes. */
+    /* Initialize meshes. */
 	meshMesh mesh;
 	if (meshInitializeCapsule(&mesh, 0.5, 2.0, 16, 32) != 0)
 		return 1;
-	meshGLInitialize(&rootMesh, &mesh);
+	meshGLInitialize(&capsule, &mesh);
 	meshDestroy(&mesh);
 	if (meshInitializeBox(&mesh, -0.5, 0.5, -0.5, 0.5, -0.5, 0.5) != 0)
 		return 2;
-	meshGLInitialize(&childMesh, &mesh);
+	meshGLInitialize(&box, &mesh);
 	meshDestroy(&mesh);
-	if (meshInitializeSphere(&mesh, 0.5, 16, 32) != 0)
-		return 3;
-	meshGLInitialize(&siblingMesh, &mesh);
-	meshDestroy(&mesh);
+
 	/* Initialize scene graph nodes. */
-	if (sceneInitialize(&siblingNode, 2, 2, &siblingMesh, NULL, NULL) != 0)
+	if (sceneInitialize(&child, 2, 2, &capsule, NULL, NULL) != 0)
 		return 4;
-	if (sceneInitialize(&childNode, 2, 2, &childMesh, NULL, NULL) != 0)
+	if (sceneInitialize(&root, 2, 2, &box, &child, NULL) != 0)
 		return 5;
-	if (sceneInitialize(&rootNode, 2, 2, &rootMesh, &childNode, &siblingNode) != 0)
-		return 6;
 	/* Customize the uniforms. */
 	GLdouble trans[3] = {1.0, 0.0, 0.0};
-	sceneSetTranslation(&childNode, trans);
-	vecSet(3, trans, 0.0, 1.0, 0.0);
-	sceneSetTranslation(&siblingNode, trans);
+	sceneSetTranslation(&child, trans);
 	GLdouble unif[2] = {1.0, 1.0};
-	sceneSetUniform(&siblingNode, unif);
-	sceneSetUniform(&childNode, unif);
-	sceneSetUniform(&rootNode, unif);
+	sceneSetUniform(&child, unif);
+	sceneSetUniform(&root, unif);
 	return 0;
 }
 
-int initializeTex() {
-    if(texInitializeFile(&tiger, "cat.jpg", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 1;
-    }
-    if(texInitializeFile(&huskies, "test.jpg", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 2;
-    }
-    if(texInitializeFile(&crown, "crown.jpg", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 3;
-    }
-    if(texInitializeFile(&pattern, "test2.png", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 4;
-    }
-    sceneSetOneTexture(&rootNode, 0, &tiger);
-    sceneSetOneTexture(&rootNode, 1, &pattern);
-    sceneSetOneTexture(&siblingNode, 0, &huskies);
-    sceneSetOneTexture(&siblingNode, 1, &pattern);
-    sceneSetOneTexture(&childNode, 0, &crown);
-    sceneSetOneTexture(&childNode, 1, &pattern);
-    return 0;
-}
-
 void destroyScene(void) {
-    texDestroy(&tiger);
-    texDestroy(&huskies);
-    texDestroy(&pattern);
-    texDestroy(&crown);
-	meshGLDestroy(&siblingMesh);
-	meshGLDestroy(&childMesh);
-	meshGLDestroy(&rootMesh);
-	sceneDestroyRecursively(&rootNode);
+	meshGLDestroy(&box);
+	meshGLDestroy(&capsule);
+	sceneDestroyRecursively(&root);
 }
 
 /* Returns 0 on success, non-zero on failure. */
@@ -138,23 +96,27 @@ int initializeShaderProgram(void) {
 		uniform mat4 viewing;\
 		uniform mat4 modeling;\
 		attribute vec3 position;\
-		attribute vec2 texCoords;\
 		attribute vec3 normal;\
-		uniform vec2 spice;\
+		attribute vec2 texCoords;\
+		uniform vec3 spice;\
 		varying vec4 rgba;\
-        varying vec2 st;\
+	    varying vec2 st;\
 		void main() {\
 			gl_Position = viewing * modeling * vec4(position, 1.0);\
-			rgba = vec4(texCoords, spice) + vec4(normal, 1.0);\
-            st = texCoords;\
+			rgba = vec4(spice, 1.0) + vec4(normal, 1.0);\
+			st = texCoords;\
 		}";
+
 	GLchar fragmentCode[] = "\
-        uniform sampler2D textureA;\
+        uniform sampler2D texture;\
         uniform sampler2D textureB;\
 		varying vec4 rgba;\
-        varying vec2 st;\
+	    varying vec2 st;\
 		void main() {\
-			gl_FragColor = rgba * texture2D(textureA, st) * texture2D(textureB, st);\
+			vec4 first, second;\
+			first = texture2D(texture,st);\
+			second = texture2D(textureB,st);\
+			gl_FragColor = rgba * first * second;\
 		}";
 	program = makeProgram(vertexCode, fragmentCode);
 	if (program != 0) {
@@ -165,10 +127,41 @@ int initializeShaderProgram(void) {
 		viewingLoc = glGetUniformLocation(program, "viewing");
 		modelingLoc = glGetUniformLocation(program, "modeling");
 		unifLocs[0] = glGetUniformLocation(program, "spice");
-        textureLocs[0] = glGetUniformLocation(program, "textureA");
-        textureLocs[1] = glGetUniformLocation(program, "textureB");
+		textureLocs[0] = glGetUniformLocation(program, "texture");
+		textureLocs[1] = glGetUniformLocation(program, "textureB");
 	}
 	return (program == 0);
+}
+
+int initializeTex() {
+    /* A 'texture unit' is a piece of machinery inside the GPU that performs 
+    texture mapping. A GPU might have many texture units, allowing you to map 
+    many textures onto your meshes in complicated ways. The glActiveTexture 
+    function selects which texture unit is affected by subsequent OpenGL calls. 
+    In this tutorial, we use only texture unit 0, so we activate it here, once 
+    and for all. */
+
+    if (texInitializeFile(&texA, "cat.jpg", GL_LINEAR, GL_LINEAR, 
+            GL_REPEAT, GL_REPEAT) != 0)
+        return 1;
+
+
+    if (texInitializeFile(&texB, "test.jpg", GL_LINEAR, GL_LINEAR, 
+            GL_REPEAT, GL_REPEAT) != 0)
+        return 2;
+
+    if (texInitializeFile(&texC, "crown.jpg", GL_LINEAR, GL_LINEAR, 
+            GL_REPEAT, GL_REPEAT) != 0)
+        return 3;
+
+
+    sceneSetOneTexture(&root, 0, &texA);
+    sceneSetOneTexture(&root, 1, &texB);
+
+    sceneSetOneTexture(&child, 0, &texA);
+    sceneSetOneTexture(&child, 1, &texC);
+
+    return 0;
 }
 
 void render(void) {
@@ -176,18 +169,18 @@ void render(void) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glUseProgram(program);
 	camRender(&cam, viewingLoc);
-	/* This animation code is different from that in 520mainCamera.c. */
+    /* This animation code is different from that in 520mainCamera.c. */
 	GLdouble rot[3][3], identity[4][4], axis[3] = {1.0, 1.0, 1.0};
 	vecUnit(3, axis, axis);
 	alpha += 0.01;
 	mat33AngleAxisRotation(alpha, axis, rot);
-	sceneSetRotation(&rootNode, rot);
-	sceneSetOneUniform(&rootNode, 0, 0.5 + 0.5 * sin(alpha * 7.0));
+	sceneSetRotation(&root, rot);
+	sceneSetOneUniform(&root, 0, 0.5 + 0.5 * sin(alpha * 7.0));
 	/* This rendering code is different from that in 520mainCamera.c. */
 	mat44Identity(identity);
-	GLuint unifDims[1] = {2};
-	GLuint attrDims[3] = {3, 2, 3};
-	sceneRender(&rootNode, identity, modelingLoc, 1, unifDims, unifLocs, 3, 
+	GLuint unifDims[1] = {3};
+	GLuint attrDims[2] = {3, 2};
+	sceneRender(&root, identity, modelingLoc, 1, unifDims, unifLocs, 2, 
 		attrDims, attrLocs, textureLocs);
 }
 
@@ -196,7 +189,7 @@ int main(void) {
     if (glfwInit() == 0)
         return 1;
     GLFWwindow *window;
-    window = glfwCreateWindow(512, 512, "Scene Graph", NULL, NULL);
+    window = glfwCreateWindow(512, 512, "Textures", NULL, NULL);
     if (window == NULL) {
         glfwTerminate();
         return 2;
@@ -210,13 +203,56 @@ int main(void) {
     glDepthRange(1.0, 0.0);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    /* Initialize a whole scene, rather than just one mesh. */
-    if (initializeScene() != 0)
-    	return 3;
-    if(initializeTex() != 0)
+    
+    
+    if (initializeScene() != 0){
+        return 3;
+    }
+    
+    /*texTexture tiger, huskies, crown, pattern;
+    if (texInitializeFile(&tiger, "cat.jpg", GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT) != 0) {
+    	glfwDestroyWindow(window);
+        glfwTerminate();
+        return 3;
+    }
+    if (texInitializeFile(&huskies, "test.jpg", GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT) != 0) {
+    	glfwDestroyWindow(window);
+        glfwTerminate();
+        return 3;
+    }
+    if (texInitializeFile(&pattern, "test2.png", GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT) != 0) {
+    	glfwDestroyWindow(window);
+        glfwTerminate();
+        return 3;
+    }
+    if (texInitializeFile(&crown, "crown.jpg", GL_NEAREST, GL_NEAREST, GL_REPEAT, GL_REPEAT) != 0) {
+    	glfwDestroyWindow(window);
+        glfwTerminate();
+        return 3;
+    }
+    texTexture *rootTex[2];
+    texTexture *childTex[2];
+    rootTex[0] = &tiger;
+    rootTex[1] = &huskies;
+    childTex[0] = &pattern;
+    childTex[1] = &crown;
+    sceneSetOneTexture(&root, 0, &tiger);
+    sceneSetOneTexture(&root, 1, &pattern);
+    sceneSetOneTexture(&child, 0, &huskies);
+    sceneSetOneTexture(&child, 1, &crown);*/
+    
+    
+    if (initializeShaderProgram() != 0) {
+    	glfwDestroyWindow(window);
+        glfwTerminate();
         return 4;
-    if (initializeShaderProgram() != 0)
-    	return 4;
+    }
+    
+    if (initializeTex() != 0) {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return 5;
+    }
     GLdouble target[3] = {0.0, 0.0, 0.0};
 	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 512.0, 512.0, 10.0, 
 		M_PI / 4.0, M_PI / 4.0, target);
@@ -225,15 +261,15 @@ int main(void) {
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+    // how destroy multiple?
+    //glDeleteTextures(1, &texture);
     glDeleteProgram(program);
-    /* Don't forget to destroy the whole scene. */
     destroyScene();
-    GLuint tex1 = 0;
-    GLuint tex2 = 1;
-    glDeleteTextures(1, &tex1);
-    glDeleteTextures(1, &tex2);
 	glfwDestroyWindow(window);
     glfwTerminate();
+    // TEX DESTROY
+    // destory both types of meshes
+    // scene destroy
     return 0;
 }
 

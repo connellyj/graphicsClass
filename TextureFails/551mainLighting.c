@@ -1,3 +1,13 @@
+/*
+ * 540mainTexturing.c
+ * by Ritvik Kar
+ * CS 331: Computer Graphics
+*/
+
+/* On macOS, compile with...
+    clang 540mainTexturing.c -lglfw -framework OpenGL
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -16,7 +26,7 @@ GLdouble alpha = 0.0;
 GLuint program;
 GLint attrLocs[3];
 GLint viewingLoc, modelingLoc;
-GLint textureLoc[1];
+GLint textureLoc[2];
 GLint unifLocs[1];
 camCamera cam;
 /* Allocate three meshes and three scene graph nodes. */
@@ -106,51 +116,31 @@ void destroyScene(void) {
 /* Returns 0 on success, non-zero on failure. */
 int initializeShaderProgram(void) {
 	GLchar vertexCode[] = "\
-    uniform mat4 viewing;\
-    uniform mat4 modeling;\
-    attribute vec3 position;\
-    attribute vec2 texCoords;\
-    attribute vec3 normal;\
-    varying vec3 fragPos;\
-    varying vec3 normalDir;\
-    varying vec2 st;\
-    void main() {\
-        vec4 worldPos = modeling * vec4(position, 1.0);\
-        gl_Position = viewing * worldPos;\
-        fragPos = vec3(worldPos);\
-        normalDir = vec3(modeling * vec4(normal, 0.0));\
-        st = texCoords;\
-    }";
-    GLchar fragmentCode[] = "\
-        uniform sampler2D texture0;\
-        uniform vec3 specular;\
-        uniform vec3 camPos;\
-        uniform vec3 lightPos;\
-        uniform vec3 lightCol;\
-        uniform vec3 lightAtt;\
-        varying vec3 fragPos;\
-        varying vec3 normalDir;\
-        varying vec2 st;\
-        void main() {\
-            vec3 surfCol = vec3(texture2D(texture0, st));\
-            vec3 norDir = normalize(normalDir);\
-            vec3 litDir = normalize(lightPos - fragPos);\
-            vec3 camDir = normalize(camPos - fragPos);\
-            vec3 refDir = 2.0 * dot(litDir, norDir) * norDir - litDir;\
-            float d = distance(lightPos, fragPos);\
-            float a = lightAtt[0] + lightAtt[1] * d + lightAtt[2] * d * d;\
-            float diffInt = dot(norDir, litDir) / a;\
-            float specInt = dot(refDir, camDir);\
-            if (diffInt <= 0.0 || specInt <= 0.0)\
-                specInt = 0.0;\
-            float ambInt = 0.1;\
-            if (diffInt <= ambInt)\
-                diffInt = ambInt;\
-            vec3 diffLight = diffInt * lightCol * surfCol;\
-            float shininess = 64.0;\
-            vec3 specLight = pow(specInt / a, shininess) * lightCol * specular;\
-            gl_FragColor = vec4(diffLight + specLight, 1.0);\
-        }";
+		uniform mat4 viewing;\
+		uniform mat4 modeling;\
+		attribute vec3 position;\
+		attribute vec3 normal;\
+		attribute vec2 texCoords;\
+		uniform vec2 spice;\
+		varying vec4 rgba;\
+	    varying vec2 st;\
+		void main() {\
+			gl_Position = viewing * modeling * vec4(position, 1.0);\
+			rgba = vec4(texCoords, spice) + vec4(normal, 1.0);\
+			st = texCoords;\
+		}";
+
+	GLchar fragmentCode[] = "\
+        uniform sampler2D texture;\
+        uniform sampler2D textureB;\
+		varying vec4 rgba;\
+	    varying vec2 st;\
+		void main() {\
+			vec4 first, second;\
+			first = texture2D(texture,st);\
+			second = texture2D(textureB,st);\
+			gl_FragColor = rgba * first * (second * 0.5);\
+		}";
 	program = makeProgram(vertexCode, fragmentCode);
 	if (program != 0) {
 		glUseProgram(program);
@@ -160,7 +150,8 @@ int initializeShaderProgram(void) {
 		viewingLoc = glGetUniformLocation(program, "viewing");
 		modelingLoc = glGetUniformLocation(program, "modeling");
 		unifLocs[0] = glGetUniformLocation(program, "spice");
-		textureLoc[0] = glGetUniformLocation(program, "texture0");
+		textureLoc[0] = glGetUniformLocation(program, "texture");
+		textureLoc[1] = glGetUniformLocation(program, "textureB");
 	}
 	return (program == 0);
 }
@@ -260,9 +251,6 @@ int main(void) {
     texDestroy(&texA);
     texDestroy(&texB);
     texDestroy(&texC);
-    meshGLDestroy(&rootMesh);
-    meshGLDestroy(&siblingMesh);
-    meshGLDestroy(&childMesh);
     destroyScene();
 	glfwDestroyWindow(window);
     glfwTerminate();

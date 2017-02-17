@@ -1,7 +1,3 @@
-/* On macOS, compile with...
-    clang 530mainScene.c -lglfw -framework OpenGL
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -20,13 +16,13 @@ GLdouble alpha = 0.0;
 GLuint program;
 GLint attrLocs[3];
 GLint viewingLoc, modelingLoc;
-GLint unifLocs[1];
-GLint textureLocs[2];
+GLint textureLoc[1];
+GLint unifLocs[2];
 camCamera cam;
 /* Allocate three meshes and three scene graph nodes. */
 meshGLMesh rootMesh, childMesh, siblingMesh;
 sceneNode rootNode, childNode, siblingNode;
-texTexture tiger, huskies, crown, pattern;
+texTexture texA, texB, texC;
 
 void handleError(int error, const char *description) {
 	fprintf(stderr, "handleError: %d\n%s\n", error, description);
@@ -80,52 +76,28 @@ int initializeScene(void) {
 		return 3;
 	meshGLInitialize(&siblingMesh, &mesh);
 	meshDestroy(&mesh);
+
 	/* Initialize scene graph nodes. */
-	if (sceneInitialize(&siblingNode, 2, 2, &siblingMesh, NULL, NULL) != 0)
+	if (sceneInitialize(&siblingNode, 5, 1, &siblingMesh, NULL, NULL) != 0)
 		return 4;
-	if (sceneInitialize(&childNode, 2, 2, &childMesh, NULL, NULL) != 0)
+	if (sceneInitialize(&childNode, 5, 1, &childMesh, NULL, &siblingNode) != 0)
 		return 5;
-	if (sceneInitialize(&rootNode, 2, 2, &rootMesh, &childNode, &siblingNode) != 0)
+	if (sceneInitialize(&rootNode, 5, 1, &rootMesh, &childNode, NULL) != 0)
 		return 6;
 	/* Customize the uniforms. */
 	GLdouble trans[3] = {1.0, 0.0, 0.0};
 	sceneSetTranslation(&childNode, trans);
 	vecSet(3, trans, 0.0, 1.0, 0.0);
 	sceneSetTranslation(&siblingNode, trans);
-	GLdouble unif[2] = {1.0, 1.0};
-	sceneSetUniform(&siblingNode, unif);
-	sceneSetUniform(&childNode, unif);
-	sceneSetUniform(&rootNode, unif);
+	GLdouble unifRoot[5] = {1.0, 1.0, 1.0, 1.0, 1.0};
+    GLdouble unifOther[5] = {1.0, 1.0, 0.3, 0.3, 0.3};
+	sceneSetUniform(&siblingNode, unifOther);
+	sceneSetUniform(&childNode, unifOther);
+	sceneSetUniform(&rootNode, unifRoot);
 	return 0;
 }
 
-int initializeTex() {
-    if(texInitializeFile(&tiger, "cat.jpg", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 1;
-    }
-    if(texInitializeFile(&huskies, "test.jpg", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 2;
-    }
-    if(texInitializeFile(&crown, "crown.jpg", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 3;
-    }
-    if(texInitializeFile(&pattern, "test2.png", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 4;
-    }
-    sceneSetOneTexture(&rootNode, 0, &tiger);
-    sceneSetOneTexture(&rootNode, 1, &pattern);
-    sceneSetOneTexture(&siblingNode, 0, &huskies);
-    sceneSetOneTexture(&siblingNode, 1, &pattern);
-    sceneSetOneTexture(&childNode, 0, &crown);
-    sceneSetOneTexture(&childNode, 1, &pattern);
-    return 0;
-}
-
 void destroyScene(void) {
-    texDestroy(&tiger);
-    texDestroy(&huskies);
-    texDestroy(&pattern);
-    texDestroy(&crown);
 	meshGLDestroy(&siblingMesh);
 	meshGLDestroy(&childMesh);
 	meshGLDestroy(&rootMesh);
@@ -135,27 +107,51 @@ void destroyScene(void) {
 /* Returns 0 on success, non-zero on failure. */
 int initializeShaderProgram(void) {
 	GLchar vertexCode[] = "\
-		uniform mat4 viewing;\
-		uniform mat4 modeling;\
-		attribute vec3 position;\
-		attribute vec2 texCoords;\
-		attribute vec3 normal;\
-		uniform vec2 spice;\
-		varying vec4 rgba;\
+    uniform mat4 viewing;\
+    uniform mat4 modeling;\
+    attribute vec3 position;\
+    attribute vec2 texCoords;\
+    attribute vec3 normal;\
+    varying vec3 fragPos;\
+    varying vec3 normalDir;\
+    varying vec2 st;\
+    void main() {\
+        vec4 worldPos = modeling * vec4(position, 1.0);\
+        gl_Position = viewing * worldPos;\
+        fragPos = vec3(worldPos);\
+        normalDir = vec3(modeling * vec4(normal, 0.0));\
+        st = texCoords;\
+    }";
+    GLchar fragmentCode[] = "\
+        uniform sampler2D texture0;\
+        uniform vec3 specular;\
+        uniform vec3 camPos;\
+        uniform vec3 lightPos;\
+        uniform vec3 lightCol;\
+        uniform vec3 lightAtt;\
+        varying vec3 fragPos;\
+        varying vec3 normalDir;\
         varying vec2 st;\
-		void main() {\
-			gl_Position = viewing * modeling * vec4(position, 1.0);\
-			rgba = vec4(texCoords, spice) + vec4(normal, 1.0);\
-            st = texCoords;\
-		}";
-	GLchar fragmentCode[] = "\
-        uniform sampler2D textureA;\
-        uniform sampler2D textureB;\
-		varying vec4 rgba;\
-        varying vec2 st;\
-		void main() {\
-			gl_FragColor = rgba * texture2D(textureA, st) * texture2D(textureB, st);\
-		}";
+        void main() {\
+            vec3 surfCol = vec3(texture2D(texture0, st));\
+            vec3 norDir = normalize(normalDir);\
+            vec3 litDir = normalize(lightPos - fragPos);\
+            vec3 camDir = normalize(camPos - fragPos);\
+            vec3 refDir = 2.0 * dot(litDir, norDir) * norDir - litDir;\
+            float d = distance(lightPos, fragPos);\
+            float a = lightAtt[0] + lightAtt[1] * d + lightAtt[2] * d * d;\
+            float diffInt = dot(norDir, litDir) / a;\
+            float specInt = dot(refDir, camDir);\
+            if (diffInt <= 0.0 || specInt <= 0.0)\
+                specInt = 0.0;\
+            float ambInt = 0.1;\
+            if (diffInt <= ambInt)\
+                diffInt = ambInt;\
+            vec3 diffLight = diffInt * lightCol * surfCol;\
+            float shininess = 64.0;\
+            vec3 specLight = pow(specInt / a, shininess) * lightCol * specular;\
+            gl_FragColor = vec4(diffLight + specLight, 1.0);\
+        }";
 	program = makeProgram(vertexCode, fragmentCode);
 	if (program != 0) {
 		glUseProgram(program);
@@ -165,10 +161,38 @@ int initializeShaderProgram(void) {
 		viewingLoc = glGetUniformLocation(program, "viewing");
 		modelingLoc = glGetUniformLocation(program, "modeling");
 		unifLocs[0] = glGetUniformLocation(program, "spice");
-        textureLocs[0] = glGetUniformLocation(program, "textureA");
-        textureLocs[1] = glGetUniformLocation(program, "textureB");
+		textureLoc[0] = glGetUniformLocation(program, "texture0");
 	}
 	return (program == 0);
+}
+
+int initializeTex() {
+    /* A 'texture unit' is a piece of machinery inside the GPU that performs 
+    texture mapping. A GPU might have many texture units, allowing you to map 
+    many textures onto your meshes in complicated ways. The glActiveTexture 
+    function selects which texture unit is affected by subsequent OpenGL calls. 
+    In this tutorial, we use only texture unit 0, so we activate it here, once 
+    and for all. */
+
+    if (texInitializeFile(&texA, "cat.jpg", GL_LINEAR, GL_LINEAR, 
+            GL_REPEAT, GL_REPEAT) != 0)
+        return 1;
+
+
+    if (texInitializeFile(&texB, "test.jpg", GL_LINEAR, GL_LINEAR, 
+            GL_REPEAT, GL_REPEAT) != 0)
+        return 2;
+
+    if (texInitializeFile(&texC, "crown.jpg", GL_LINEAR, GL_LINEAR, 
+            GL_REPEAT, GL_REPEAT) != 0)
+        return 3;
+
+
+    sceneSetOneTexture(&rootNode, 0, &texA);
+    sceneSetOneTexture(&childNode, 0, &texB);
+    sceneSetOneTexture(&siblingNode, 0, &texC);
+
+    return 0;
 }
 
 void render(void) {
@@ -185,10 +209,10 @@ void render(void) {
 	sceneSetOneUniform(&rootNode, 0, 0.5 + 0.5 * sin(alpha * 7.0));
 	/* This rendering code is different from that in 520mainCamera.c. */
 	mat44Identity(identity);
-	GLuint unifDims[1] = {2};
+	GLuint unifDims[2] = {2, 3};
 	GLuint attrDims[3] = {3, 2, 3};
-	sceneRender(&rootNode, identity, modelingLoc, 1, unifDims, unifLocs, 3, 
-		attrDims, attrLocs, textureLocs);
+	sceneRender(&rootNode, identity, modelingLoc, 2, unifDims, unifLocs, 3, 
+		attrDims, attrLocs, textureLoc);
 }
 
 int main(void) {
@@ -196,7 +220,7 @@ int main(void) {
     if (glfwInit() == 0)
         return 1;
     GLFWwindow *window;
-    window = glfwCreateWindow(512, 512, "Scene Graph", NULL, NULL);
+    window = glfwCreateWindow(512, 512, "Texture Mapping", NULL, NULL);
     if (window == NULL) {
         glfwTerminate();
         return 2;
@@ -213,10 +237,15 @@ int main(void) {
     /* Initialize a whole scene, rather than just one mesh. */
     if (initializeScene() != 0)
     	return 3;
-    if(initializeTex() != 0)
-        return 4;
     if (initializeShaderProgram() != 0)
     	return 4;
+
+    if (initializeTex() != 0) {
+        glfwDestroyWindow(window);
+        glfwTerminate();
+        return 5;
+    }
+
     GLdouble target[3] = {0.0, 0.0, 0.0};
 	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 512.0, 512.0, 10.0, 
 		M_PI / 4.0, M_PI / 4.0, target);
@@ -227,13 +256,12 @@ int main(void) {
     }
     glDeleteProgram(program);
     /* Don't forget to destroy the whole scene. */
+    // glDeleteTextures(1, 0);??
+    texDestroy(&texA);
+    texDestroy(&texB);
+    texDestroy(&texC);
     destroyScene();
-    GLuint tex1 = 0;
-    GLuint tex2 = 1;
-    glDeleteTextures(1, &tex1);
-    glDeleteTextures(1, &tex2);
 	glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
 }
-

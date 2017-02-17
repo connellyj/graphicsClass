@@ -48,9 +48,9 @@ void sceneDestroy(sceneNode *node) {
 
 /*** Accessors ***/
 
-/* Copies the unifDim-dimensional vector from unif into the node. */
+/* Copies the texNum-dimensional vector from tex into the node. */
 void sceneSetTexture(sceneNode *node, texTexture **tex) {
-	vecCopyTexture(node->unifDim, tex, node->tex);
+	vecCopyTexture(node->texNum, tex, node->tex);
 }
 
 /* Sets one uniform in the node, based on its index in the unif array. */

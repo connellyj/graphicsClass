@@ -251,9 +251,6 @@ int main(void) {
     texDestroy(&texA);
     texDestroy(&texB);
     texDestroy(&texC);
-    meshGLDestroy(&rootMesh);
-    meshGLDestroy(&siblingMesh);
-    meshGLDestroy(&childMesh);
     destroyScene();
 	glfwDestroyWindow(window);
     glfwTerminate();
