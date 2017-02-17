@@ -12,7 +12,7 @@
 #include "540texture.c"
 #include "530vector.c"
 #include "510mesh.c"
-#include "550light.c"
+#include "560light.c"
 #include "520matrix.c"
 #include "520camera.c"
 #include "540scene.c"
@@ -29,7 +29,7 @@ meshGLMesh rootMesh, childMesh, siblingMesh;
 sceneNode rootNode, childNode, siblingNode;
 texTexture tiger, huskies, crown, pattern;
 /* lighting stuff */
-GLint lightLocs[3];
+GLint lightLocs[5];
 lightLight light;
 GLint camPosLoc;
 
@@ -130,6 +130,11 @@ void initializeLight() {
     lightSetColor(&light, rgb);
     GLdouble att[3] = {1.0, 0.0, 0.0};
     lightSetAttenuation(&light, att);
+    lightSetType(&light, lightOMNI);
+    GLdouble identity[3][3];
+    mat33Identity(identity);
+    lightSetRotation(&light, identity);
+    lightSetSpotAngle(&light, 25.0);
 }
 
 void destroyScene(void) {
@@ -217,7 +222,7 @@ void render(void) {
     GLfloat vec[3];
     vecOpenGL(3, cam.translation, vec);
     glUniform3fv(camPosLoc, 1, vec);
-    lightRender(&light, lightLocs[0], lightLocs[1], lightLocs[2]);
+    lightRender(&light, lightLocs[0], lightLocs[1], lightLocs[2], lightLocs[3], lightLocs[4]);
 	/* This animation code is different from that in 520mainCamera.c. */
 	GLdouble rot[3][3], identity[4][4], axis[3] = {1.0, 1.0, 1.0};
 	vecUnit(3, axis, axis);
