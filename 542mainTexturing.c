@@ -1,6 +1,3 @@
-
-
-
 /* On macOS, compile with...
     clang 530mainScene.c -lglfw -framework OpenGL
 */
@@ -12,21 +9,24 @@
 #include <GLFW/glfw3.h>
 
 #include "500shader.c"
+#include "540texture.c"
 #include "530vector.c"
 #include "510mesh.c"
 #include "520matrix.c"
 #include "520camera.c"
-#include "530scene.c"
+#include "540scene.c"
 
 GLdouble alpha = 0.0;
 GLuint program;
 GLint attrLocs[3];
 GLint viewingLoc, modelingLoc;
 GLint unifLocs[1];
+GLint textureLocs[2];
 camCamera cam;
 /* Allocate three meshes and three scene graph nodes. */
 meshGLMesh rootMesh, childMesh, siblingMesh;
 sceneNode rootNode, childNode, siblingNode;
+texTexture texA, texB, texC;
 
 void handleError(int error, const char *description) {
 	fprintf(stderr, "handleError: %d\n%s\n", error, description);
@@ -81,11 +81,11 @@ int initializeScene(void) {
 	meshGLInitialize(&siblingMesh, &mesh);
 	meshDestroy(&mesh);
 	/* Initialize scene graph nodes. */
-	if (sceneInitialize(&siblingNode, 2, &siblingMesh, NULL, NULL) != 0)
+	if (sceneInitialize(&siblingNode, 2, 2, &siblingMesh, NULL, NULL) != 0)
 		return 4;
-	if (sceneInitialize(&childNode, 2, &childMesh, NULL, NULL) != 0)
+	if (sceneInitialize(&childNode, 2, 2, &childMesh, NULL, NULL) != 0)
 		return 5;
-	if (sceneInitialize(&rootNode, 2, &rootMesh, &childNode, &siblingNode) != 0)
+	if (sceneInitialize(&rootNode, 2, 2, &rootMesh, &childNode, &siblingNode) != 0)
 		return 6;
 	/* Customize the uniforms. */
 	GLdouble trans[3] = {1.0, 0.0, 0.0};
@@ -106,6 +106,30 @@ void destroyScene(void) {
 	sceneDestroyRecursively(&rootNode);
 }
 
+int initializeTex() {
+    if (texInitializeFile(&texA, "cat.jpg", GL_LINEAR, GL_LINEAR, 
+            GL_REPEAT, GL_REPEAT) != 0)
+        return 1;
+
+
+    if (texInitializeFile(&texB, "test.jpg", GL_LINEAR, GL_LINEAR, 
+            GL_REPEAT, GL_REPEAT) != 0)
+        return 2;
+
+    if (texInitializeFile(&texC, "crown.jpg", GL_LINEAR, GL_LINEAR, 
+            GL_REPEAT, GL_REPEAT) != 0)
+        return 3;
+
+
+    sceneSetOneTexture(&rootNode, 0, &texA);
+    sceneSetOneTexture(&rootNode, 1, &texB);
+
+    sceneSetOneTexture(&siblingNode, 0, &texA);
+    sceneSetOneTexture(&siblingNode, 1, &texC);
+
+    return 0;
+}
+
 /* Returns 0 on success, non-zero on failure. */
 int initializeShaderProgram(void) {
 	GLchar vertexCode[] = "\
@@ -116,14 +140,22 @@ int initializeShaderProgram(void) {
 		attribute vec3 normal;\
 		uniform vec2 spice;\
 		varying vec4 rgba;\
+        varying vec2 st;\
 		void main() {\
 			gl_Position = viewing * modeling * vec4(position, 1.0);\
 			rgba = vec4(texCoords, spice) + vec4(normal, 1.0);\
+            st = texCoords;\
 		}";
 	GLchar fragmentCode[] = "\
+        uniform sampler2D texture;\
+        uniform sampler2D textureB;\
 		varying vec4 rgba;\
+        varying vec2 st;\
 		void main() {\
-			gl_FragColor = rgba;\
+			vec4 first, second;\
+			first = texture2D(texture,st);\
+			second = texture2D(textureB,st);\
+			gl_FragColor = rgba * first * (second * 0.5);\
 		}";
 	program = makeProgram(vertexCode, fragmentCode);
 	if (program != 0) {
@@ -134,6 +166,8 @@ int initializeShaderProgram(void) {
 		viewingLoc = glGetUniformLocation(program, "viewing");
 		modelingLoc = glGetUniformLocation(program, "modeling");
 		unifLocs[0] = glGetUniformLocation(program, "spice");
+        textureLocs[0] = glGetUniformLocation(program, "texture");
+        textureLocs[1] = glGetUniformLocation(program, "textureB");
 	}
 	return (program == 0);
 }
@@ -155,7 +189,7 @@ void render(void) {
 	GLuint unifDims[1] = {2};
 	GLuint attrDims[3] = {3, 2, 3};
 	sceneRender(&rootNode, identity, modelingLoc, 1, unifDims, unifLocs, 3, 
-		attrDims, attrLocs);
+		attrDims, attrLocs, textureLocs);
 }
 
 int main(void) {
@@ -182,6 +216,7 @@ int main(void) {
     	return 3;
     if (initializeShaderProgram() != 0)
     	return 4;
+    initializeTex();
     GLdouble target[3] = {0.0, 0.0, 0.0};
 	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 512.0, 512.0, 10.0, 
 		M_PI / 4.0, M_PI / 4.0, target);
@@ -193,6 +228,7 @@ int main(void) {
     glDeleteProgram(program);
     /* Don't forget to destroy the whole scene. */
     destroyScene();
+    texDestroy(&texA);
 	glfwDestroyWindow(window);
     glfwTerminate();
     return 0;

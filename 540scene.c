@@ -13,15 +13,20 @@ struct sceneNode {
 	GLdouble *unif;
 	meshGLMesh *meshGL;
 	sceneNode *firstChild, *nextSibling;
+    texTexture **tex;
+    int texNum;
 };
 
 /* Initializes a sceneNode struct. The translation and rotation are initialized to trivial values. The user must remember to call sceneDestroy or 
 sceneDestroyRecursively when finished. Returns 0 if no error occurred. */
-int sceneInitialize(sceneNode *node, GLuint unifDim, meshGLMesh *mesh, 
-		sceneNode *firstChild, sceneNode *nextSibling) {
-	node->unif = (GLdouble *)malloc(unifDim * sizeof(GLdouble));
+int sceneInitialize(sceneNode *node, GLuint unifDim, GLuint texNum, 
+        meshGLMesh *mesh, sceneNode *firstChild, sceneNode *nextSibling) {
+	node->unif = (GLdouble *)malloc(unifDim * sizeof(GLdouble) + 
+        texNum * sizeof(texTexture *));
 	if (node->unif == NULL)
 		return 1;
+    node->tex = (texTexture **)&(node->unif[unifDim]);
+    node->texNum = texNum;
 	mat33Identity(node->rotation);
 	vecSet(3, node->translation, 0.0, 0.0, 0.0);
 	node->unifDim = unifDim;
@@ -42,6 +47,16 @@ void sceneDestroy(sceneNode *node) {
 
 
 /*** Accessors ***/
+
+/* Copies the unifDim-dimensional vector from unif into the node. */
+void sceneSetTexture(sceneNode *node, texTexture **tex) {
+	vecCopyTexture(node->unifDim, tex, node->tex);
+}
+
+/* Sets one uniform in the node, based on its index in the unif array. */
+void sceneSetOneTexture(sceneNode *node, int index, texTexture *tex) {
+	node->tex[index] = tex;
+}
 
 /* Copies the unifDim-dimensional vector from unif into the node. */
 void sceneSetUniform(sceneNode *node, double unif[]) {
@@ -141,7 +156,7 @@ modelingLoc. The attribute information exists to be passed to meshGLRender. The
 uniform information is analogous, but sceneRender loads it, not meshGLRender. */
 void sceneRender(sceneNode *node, GLdouble parent[4][4], GLint modelingLoc, 
 		GLuint unifNum, GLuint unifDims[], GLint unifLocs[], 
-		GLuint attrNum, GLuint attrDims[], GLint attrLocs[]) {
+		GLuint attrNum, GLuint attrDims[], GLint attrLocs[], GLint textureLocs[]) {
     if(node == NULL) return;
 	/* Set the uniform modeling matrix. */
     GLfloat modeling[4][4];
@@ -151,10 +166,10 @@ void sceneRender(sceneNode *node, GLdouble parent[4][4], GLint modelingLoc,
 	mat44OpenGL(parentTimesModel, modeling);
 	glUniformMatrix4fv(modelingLoc, 1, GL_FALSE, (GLfloat *)modeling);
 	/* Set the other uniforms. The casting from double to float is annoying. */
-    int buffOffset = 0;
-    for(int i = 0; i < attrNum; i++) {
+    int offset = 0;
+    for(int i = 0; i < unifNum; i++) {
         GLfloat tmp[unifDims[i]];
-        vecOpenGL(unifDims[i], node->unif, tmp);
+        vecOpenGL(unifDims[i], &((node->unif)[offset]), tmp);
         if(unifDims[i] == 1){
             glUniform1fv(unifLocs[i], 1, tmp);
         }else if(unifDims[i] == 2) {
@@ -164,14 +179,24 @@ void sceneRender(sceneNode *node, GLdouble parent[4][4], GLint modelingLoc,
         }else if(unifDims[i] == 4) {
             glUniform4fv(unifLocs[i], 1, tmp);
         }
-        buffOffset += (unifDims[i] * sizeof(GLdouble));
+        offset += unifDims[i];
     }
 	/* Render the mesh, the children, and the younger siblings. */
+    GLenum texUnits[8] = {GL_TEXTURE0, GL_TEXTURE1, GL_TEXTURE2, GL_TEXTURE3,
+                 GL_TEXTURE4, GL_TEXTURE5, GL_TEXTURE6, GL_TEXTURE7};
+    for(int i = 0; i < node->texNum; i++) {
+        // SEG FAULT
+        texRender(node->tex[i], texUnits[i], i, textureLocs[i]);
+    }
 	meshGLRender(node->meshGL, attrNum, attrDims, attrLocs);
+    for(int i = 0; i < node->texNum; i++) {
+        texUnrender(node->tex[i], texUnits[i]);
+    }
     sceneRender(node->firstChild, parentTimesModel, modelingLoc,
                     unifNum, unifDims, unifLocs,
-                    attrNum, attrDims, attrLocs);
+                    attrNum, attrDims, attrLocs, textureLocs);
     sceneRender(node->nextSibling, parent, modelingLoc,
                     unifNum, unifDims, unifLocs,
-                    attrNum, attrDims, attrLocs);
+                    attrNum, attrDims, attrLocs, textureLocs);
 }
+

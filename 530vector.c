@@ -10,6 +10,14 @@ void vecCopy(int dim, GLdouble v[], GLdouble copy[]) {
     }
 }
 
+/* Copies the dim-dimensional vector v to the dim-dimensional vector copy. */
+void vecCopyTexture(int dim, texTexture *v[], texTexture *copy[]) {
+	int i;
+    for(i = 0; i < dim; ++i) {
+        copy[i] = v[i];
+    }
+}
+
 /* Adds the dim-dimensional vectors v and w. */
 void vecAdd(int dim, GLdouble v[], GLdouble w[], GLdouble vPlusW[]) {
 	int i;

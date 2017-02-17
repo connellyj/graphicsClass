@@ -1,6 +1,3 @@
-
-
-
 /* On macOS, compile with...
     clang 530mainScene.c -lglfw -framework OpenGL
 */
@@ -12,6 +9,7 @@
 #include <GLFW/glfw3.h>
 
 #include "500shader.c"
+#include "540texture.c"
 #include "530vector.c"
 #include "510mesh.c"
 #include "520matrix.c"
