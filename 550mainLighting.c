@@ -276,8 +276,6 @@ int main(void) {
     glDeleteProgram(program);
     /* Don't forget to destroy the whole scene. */
     destroyScene();
-    GLuint tex1 = 0;
-    glDeleteTextures(1, &tex1);
 	glfwDestroyWindow(window);
     glfwTerminate();
     return 0;

@@ -290,14 +290,20 @@ void mat44OpenGL(GLdouble m[4][4], GLfloat openGL[4][4]) {
 
 /* builds the 3 by 3 identity matrix */
 void mat33Identity(GLdouble m[3][3]){
-    for(int i = 0; i < 3; i++){
-        m[i][i] = 1;
+    for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < 3; j++) {
+            if(i == j) m[i][j] = 1;
+            else m[i][j] = 0;
+        }
     }
 }
 
 /* builds the 4 by 4 identity matrix */
 void mat44Identity(GLdouble m[4][4]){
-    for(int i = 0; i < 4; i++){
-        m[i][i] = 1;
+    for(int i = 0; i < 4; i++) {
+        for(int j = 0; j < 4; j++) {
+            if(i == j) m[i][j] = 1;
+            else m[i][j] = 0;
+        }
     }
 }

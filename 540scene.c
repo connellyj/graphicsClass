@@ -14,7 +14,7 @@ struct sceneNode {
 	meshGLMesh *meshGL;
 	sceneNode *firstChild, *nextSibling;
     texTexture **tex;
-    int texNum;
+    GLuint texNum;
 };
 
 /* Initializes a sceneNode struct. The translation and rotation are initialized to trivial values. The user must remember to call sceneDestroy or 
@@ -26,9 +26,9 @@ int sceneInitialize(sceneNode *node, GLuint unifDim, GLuint texNum,
 	if (node->unif == NULL)
 		return 1;
     node->tex = (texTexture **)&(node->unif[unifDim]);
-    node->texNum = texNum;
 	mat33Identity(node->rotation);
 	vecSet(3, node->translation, 0.0, 0.0, 0.0);
+    node->texNum = texNum;
 	node->unifDim = unifDim;
 	node->meshGL = mesh;
 	node->firstChild = firstChild;
@@ -50,7 +50,7 @@ void sceneDestroy(sceneNode *node) {
 
 /* Copies the texNum-dimensional vector from tex into the node. */
 void sceneSetTexture(sceneNode *node, texTexture **tex) {
-	vecCopyTexture(node->texNum, tex, node->tex);
+    node->tex = tex;
 }
 
 /* Sets one uniform in the node, based on its index in the unif array. */
