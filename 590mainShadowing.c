@@ -262,10 +262,10 @@ int initializeCameraLight(void) {
 	lightSetSpotAngle(&light, M_PI / 3.0);
     
     /* the other light */
-    GLdouble vec1[3] = {35.0, 40.0, 13.0};
+    GLdouble vec1[3] = {45.0, 30.0, 20.0};
 	lightSetType(&lightStatic, lightSPOT);
-	lightShineFrom(&lightStatic, vec1, M_PI * 2.0 / 3.0, M_PI * 4.0 / 5.0);
-	vecSet(3, vec1, 0.3, 0.3, 0.8);
+	lightShineFrom(&lightStatic, vec1, M_PI * 3.0 / 4.0, M_PI * 3.0 / 4.0);
+	vecSet(3, vec1, 1.0, 1.0, 1.0);
 	lightSetColor(&lightStatic, vec1);
 	vecSet(3, vec1, 1.0, 0.0, 0.0);
 	lightSetAttenuation(&lightStatic, vec1);
@@ -296,6 +296,7 @@ int initializeShaderProgram(void) {
 		out vec3 normalDir;\
 		out vec2 st;\
 		out vec4 fragSdw;\
+        out vec4 fragSdwStatic;\
 		void main(void) {\
 			mat4 scaleBias = mat4(\
 				0.5, 0.0, 0.0, 0.0, \
@@ -305,6 +306,7 @@ int initializeShaderProgram(void) {
 			vec4 worldPos = modeling * vec4(position, 1.0);\
 			gl_Position = viewing * worldPos;\
 			fragSdw = scaleBias * viewingSdw * worldPos;\
+            fragSdwStatic = scaleBias * viewingStaticSdw * worldPos;\
 			fragPos = vec3(worldPos);\
 			normalDir = vec3(modeling * vec4(normal, 0.0));\
 			st = texCoords;\
@@ -330,6 +332,7 @@ int initializeShaderProgram(void) {
 		in vec3 normalDir;\
 		in vec2 st;\
 		in vec4 fragSdw;\
+        in vec4 fragSdwStatic;\
 		out vec4 fragColor;\
 		void main(void) {\
 			vec3 diffuse = vec3(texture(texture0, st));\
@@ -354,7 +357,24 @@ int initializeShaderProgram(void) {
                 diffInt = ambInt;\
 			vec3 diffRefl = diffInt * lightCol * diffuse;\
 			vec3 specRefl = pow(specInt / a, shininess) * lightCol * specular;\
-			fragColor = vec4(diffRefl + specRefl, 1.0);\
+            vec3 staticLitDir = normalize(staticPos - fragPos);\
+            vec3 staticRefDir = 2.0 * dot(staticLitDir, norDir) * norDir - staticLitDir;\
+            float dStatic = distance(staticPos, fragPos);\
+            float aStatic = staticAtt[0] + staticAtt[1] * dStatic + staticAtt[2] * dStatic * dStatic;\
+            float staticDiffInt = dot(norDir, staticLitDir) / aStatic;\
+            float staticSpecInt = dot(staticRefDir, camDir);\
+            if (dot(staticAim, -staticLitDir) < staticCos)\
+				staticDiffInt = 0.0;\
+            if (staticDiffInt <= 0.0 || staticSpecInt <= 0.0)\
+                staticSpecInt = 0.0;\
+            float staticSdw = textureProj(textureStaticSdw, fragSdwStatic);\
+			staticDiffInt *= staticSdw;\
+			staticSpecInt *= staticSdw;\
+            if (staticDiffInt <= ambInt)\
+                staticDiffInt = ambInt;\
+			vec3 staticDiffRefl = staticDiffInt * staticCol * diffuse;\
+			vec3 staticSpecRefl = pow(staticSpecInt / aStatic, shininess) * staticCol * specular;\
+			fragColor = vec4(diffRefl + specRefl + staticDiffRefl + staticSpecRefl, 1.0);\
 		}";
 	program = makeProgram(vertexCode, fragmentCode);
 	if (program != 0) {
@@ -393,8 +413,9 @@ void render(void) {
 	glGetIntegerv(GL_VIEWPORT, viewport);
 	/* For each shadow-casting light, render its shadow map using minimal 
 	uniforms and textures. */
-	GLint sdwTextureLocs[1] = {-1};
+	GLint sdwTextureLocs[2] = {-1, -1};
 	shadowMapRender(&sdwMap, &sdwProg, &light, -100.0, -1.0);
+    shadowMapRender(&sdwMapStatic, &sdwProg, &lightStatic, -100.0, -1.0);
 	sceneRender(&nodeH, identity, sdwProg.modelingLoc, 0, NULL, NULL, 1, 
 		sdwTextureLocs);
 	/* Finish preparing the shadow maps, restore the viewport, and begin to 
@@ -411,15 +432,16 @@ void render(void) {
 	For each shadow-casting light, we must also connect its shadow map. */
 	lightRender(&light, lightPosLoc, lightColLoc, lightAttLoc, lightDirLoc, 
 		lightCosLoc);
+	shadowRender(&sdwMap, viewingSdwLoc, GL_TEXTURE7, 7, textureSdwLoc);
     lightRender(&lightStatic, staticPosLoc, staticColLoc, staticAttLoc, staticDirLoc, 
 		staticCosLoc);
-	shadowRender(&sdwMap, viewingSdwLoc, GL_TEXTURE7, 7, textureSdwLoc);
-    shadowRender(&sdwMapStatic, viewingSdwStaticLoc, GL_TEXTURE7, 7, textureSdwStaticLoc);
+    shadowRender(&sdwMapStatic, viewingSdwStaticLoc, GL_TEXTURE8, 8, textureSdwStaticLoc);
 	GLuint unifDims[1] = {3};
 	sceneRender(&nodeH, identity, modelingLoc, 1, unifDims, unifLocs, 0, 
 		textureLocs);
 	/* For each shadow-casting light, turn it off when finished rendering. */
 	shadowUnrender(GL_TEXTURE7);
+    shadowUnrender(GL_TEXTURE8);
 }
 
 int main(void) {
