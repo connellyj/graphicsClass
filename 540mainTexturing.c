@@ -61,23 +61,6 @@ void handleKey(GLFWwindow *window, int key, int scancode, int action,
 	}
 }
 
-void printScene(sceneNode node) {
-//    printf("\n");
-//    printf("node rotation: ");
-//    mat33Print(node.rotation);
-//    printf("node translation: %f, %f, %f\n", node.translation[0], node.translation[1],
-//           node.translation[2]);
-//    printf("node unifDim: %d\n", node.unifDim);
-//    printf("node texNum: %d\n", node.texNum);
-//    printf("mesh triNum: %d\n", node.meshGL->triNum);
-//    printf("mesh vertNum: %d\n", node.meshGL->vertNum);
-//    printf("mesh attrDim: %d\n", node.meshGL->attrDim);
-//    printf("texture width: %d\n", node.tex[0]->width);
-//    printf("texture height: %d\n", node.tex[0]->height);
-//    printf("texture texelDim: %d\n", node.tex[0]->texelDim);
-//    printf("texture openGL: %d\n", node.tex[0]->openGL);
-}
-
 /* Returns 0 on success, non-zero on failure. Warning: If initialization fails 
 midway through, then does not properly deallocate all resources. But that's 
 okay, because the program terminates almost immediately after this function 
