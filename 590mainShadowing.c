@@ -265,7 +265,7 @@ int initializeCameraLight(void) {
     GLdouble vec1[3] = {45.0, 30.0, 20.0};
 	lightSetType(&lightStatic, lightSPOT);
 	lightShineFrom(&lightStatic, vec1, M_PI * 3.0 / 4.0, M_PI * 3.0 / 4.0);
-	vecSet(3, vec1, 1.0, 1.0, 1.0);
+	vecSet(3, vec1, 0.2, 0.2, 0.9);
 	lightSetColor(&lightStatic, vec1);
 	vecSet(3, vec1, 1.0, 0.0, 0.0);
 	lightSetAttenuation(&lightStatic, vec1);
@@ -415,6 +415,8 @@ void render(void) {
 	uniforms and textures. */
 	GLint sdwTextureLocs[2] = {-1, -1};
 	shadowMapRender(&sdwMap, &sdwProg, &light, -100.0, -1.0);
+    sceneRender(&nodeH, identity, sdwProg.modelingLoc, 0, NULL, NULL, 1, 
+		sdwTextureLocs);
     shadowMapRender(&sdwMapStatic, &sdwProg, &lightStatic, -100.0, -1.0);
 	sceneRender(&nodeH, identity, sdwProg.modelingLoc, 0, NULL, NULL, 1, 
 		sdwTextureLocs);
