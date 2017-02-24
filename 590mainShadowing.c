@@ -413,7 +413,7 @@ void render(void) {
 	glGetIntegerv(GL_VIEWPORT, viewport);
 	/* For each shadow-casting light, render its shadow map using minimal 
 	uniforms and textures. */
-	GLint sdwTextureLocs[2] = {-1, -1};
+	GLint sdwTextureLocs[2] = {-1};
 	shadowMapRender(&sdwMap, &sdwProg, &light, -100.0, -1.0);
     sceneRender(&nodeH, identity, sdwProg.modelingLoc, 0, NULL, NULL, 1, 
 		sdwTextureLocs);
