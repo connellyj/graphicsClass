@@ -233,10 +233,10 @@ void mat44Orthographic(GLdouble left, GLdouble right, GLdouble bottom, GLdouble 
     }
     proj[0][0] = 2 / (right - left);
     proj[1][1] = 2 / (top - bottom);
-    proj[2][2] = 2 / (near - far);
+    proj[2][2] = -2 / (near - far);
     proj[0][3] = (-right - left) / (right - left);
     proj[1][3] = (-top - bottom) / (top - bottom);
-    proj[2][3] = (-near - far) / (near - far);
+    proj[2][3] = -(-near - far) / (near - far);
     proj[3][3] = 1;
 }
 
