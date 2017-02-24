@@ -1,4 +1,4 @@
-/* sceneRender by Julia Connelly and Kerim Celik, 02/17/2017 */
+/* A few methods by Julia Connelly and Kerim Celik, 02/24/2017 */
 
 
 /*** Creation and destruction ***/

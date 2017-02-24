@@ -1,6 +1,3 @@
-/* Copied by Julia Connelly and Kerim Celik, 02/17/2017 */
-
-
 /*** Shadow program ***/
 
 /* Do not alter the members of this data type. */
