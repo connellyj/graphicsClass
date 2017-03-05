@@ -437,7 +437,7 @@ Copyright (C) 2012 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/Accounts/connellyj/Desktop/graphicsProject/ode-0.13'
+ac_pwd='/Accounts/connellyj/Desktop/graphicsClass/graphicsProject/ode-0.13'
 srcdir='.'
 INSTALL='/usr/bin/install -c'
 MKDIR_P='./install-sh -c -d'
@@ -1008,12 +1008,12 @@ S["mkdir_p"]="$(MKDIR_P)"
 S["MKDIR_P"]="./install-sh -c -d"
 S["INSTALL_STRIP_PROGRAM"]="$(install_sh) -c -s"
 S["STRIP"]="strip"
-S["install_sh"]="${SHELL} /Accounts/connellyj/Desktop/graphicsProject/ode-0.13/install-sh"
-S["MAKEINFO"]="${SHELL} /Accounts/connellyj/Desktop/graphicsProject/ode-0.13/missing makeinfo"
-S["AUTOHEADER"]="${SHELL} /Accounts/connellyj/Desktop/graphicsProject/ode-0.13/missing autoheader"
-S["AUTOMAKE"]="${SHELL} /Accounts/connellyj/Desktop/graphicsProject/ode-0.13/missing automake-1.14"
-S["AUTOCONF"]="${SHELL} /Accounts/connellyj/Desktop/graphicsProject/ode-0.13/missing autoconf"
-S["ACLOCAL"]="${SHELL} /Accounts/connellyj/Desktop/graphicsProject/ode-0.13/missing aclocal-1.14"
+S["install_sh"]="${SHELL} /Accounts/connellyj/Desktop/graphicsClass/graphicsProject/ode-0.13/install-sh"
+S["MAKEINFO"]="${SHELL} /Accounts/connellyj/Desktop/graphicsClass/graphicsProject/ode-0.13/missing makeinfo"
+S["AUTOHEADER"]="${SHELL} /Accounts/connellyj/Desktop/graphicsClass/graphicsProject/ode-0.13/missing autoheader"
+S["AUTOMAKE"]="${SHELL} /Accounts/connellyj/Desktop/graphicsClass/graphicsProject/ode-0.13/missing automake-1.14"
+S["AUTOCONF"]="${SHELL} /Accounts/connellyj/Desktop/graphicsClass/graphicsProject/ode-0.13/missing autoconf"
+S["ACLOCAL"]="${SHELL} /Accounts/connellyj/Desktop/graphicsClass/graphicsProject/ode-0.13/missing aclocal-1.14"
 S["VERSION"]="0.13"
 S["PACKAGE"]="ode"
 S["CYGPATH_W"]="echo"

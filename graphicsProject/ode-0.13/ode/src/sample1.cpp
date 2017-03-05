@@ -4,7 +4,7 @@
 // The ODE web site is http://ode.org/
 
 #include <ode/ode.h>
-#include "/../../drawstuff/drawstuff.h"
+#include <drawstuff/drawstuff.h>
 
 #ifdef dDOUBLE
 #define dsDrawSphere dsDrawSphereD
