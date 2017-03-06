@@ -8,7 +8,7 @@
 #elif defined(CCD_IDEDOUBLE)
 #define CCD_DOUBLE
 #else
-#define CCD_SINGLE
+#define CCD_DOUBLE
 #endif
 
 #endif

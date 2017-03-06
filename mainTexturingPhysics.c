@@ -181,7 +181,7 @@ void render(void) {
 }
 
 /* START PHYSICS CHUNK */
-static void simLoop (int pause)
+static void simLoop ()
 {
     const dReal *pos,*R;
 
@@ -249,6 +249,7 @@ int main(void) {
 	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 512.0, 512.0, 10.0, 
 		M_PI / 4.0, M_PI / 4.0, target);
     while (glfwWindowShouldClose(window) == 0) {
+        //simLoop();
         render();
         glfwSwapBuffers(window);
         glfwPollEvents();

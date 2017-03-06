@@ -166,7 +166,7 @@ AUTOMAKE = ${SHELL} /Accounts/connellyj/Desktop/graphicsClass/graphicsProject/od
 AWK = awk
 CC = gcc
 CCDEPMODE = depmode=gcc3
-CCD_PRECISION = CCD_SINGLE
+CCD_PRECISION = CCD_DOUBLE
 CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
