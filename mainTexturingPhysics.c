@@ -1,5 +1,5 @@
 /* On macOS, compile with...
-    clang mainTexturingPhysics.c -lglfw -framework OpenGL
+    clang++ mainTexturingPhysics.c -lglfw -framework OpenGL -l ode
 */
 
 /* START PHYSICS CHUNK */
@@ -10,6 +10,7 @@ static dWorldID world;
 dBodyID ball;
 const dReal   radius = 1.0;
 const dReal   mass   = 1.0;
+dReal gravity = 0.0;
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -89,8 +90,13 @@ void handleKey(GLFWwindow *window, int key, int scancode, int action,
 			camAddDistance(&cam, -0.1);
 		else if (key == GLFW_KEY_J)
 			camAddDistance(&cam, 0.1);
-        if (key == GLFW_KEY_Z)
-			simLoop();
+        else if (key == GLFW_KEY_Z){
+            gravity -= 0.05;
+            dWorldSetGravity(world,0,gravity,0);
+        }else if (key == GLFW_KEY_A){
+            gravity += 0.05;
+            dWorldSetGravity(world,0,gravity,0);
+        }
 	}
 }
 
@@ -204,7 +210,7 @@ int main(void) {
 
     dInitODE();
     world = dWorldCreate();
-    dWorldSetGravity(world,0,-0.5,0);
+    dWorldSetGravity(world,0,gravity,0);
 
     ball = dBodyCreate(world);
     dMassSetZero(&m1);
