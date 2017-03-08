@@ -303,6 +303,7 @@ int main(void) {
     dMassSetSphereTotal(&m1,mass,radius);
     dBodySetMass(ball.body,&m1);
     dBodySetPosition(ball.body, 0, 6, 0);
+    dBodySetForce(ball.body, 0, -0.5, 0);
     
     ball.geom = dCreateSphere(space,radius);
     dGeomSetBody(ball.geom,ball.body);
