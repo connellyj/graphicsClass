@@ -4,15 +4,11 @@
 
 /* START PHYSICS CHUNK */
 #include <ode/ode.h>
-
-#ifdef dDOUBLE
-#define dsDrawSphere dsDrawSphereD
-#endif
 /* END PHYSICS CHUNK */
 
 static dWorldID world;
 dBodyID ball;
-const dReal   radius = 0.2;
+const dReal   radius = 1.0;
 const dReal   mass   = 1.0;
 
 #include <stdio.h>
@@ -39,7 +35,29 @@ camCamera cam;
 /* Allocate three meshes and three scene graph nodes. */
 meshGLMesh rootMesh;
 sceneNode rootNode;
-texTexture tiger, huskies, crown, pattern;
+texTexture tiger, pattern;
+
+/* START PHYSICS CHUNK */
+static void simLoop ()
+{
+    const dReal *pos,*R;
+    
+    dWorldStep(world,0.05);
+    
+    pos = dBodyGetPosition(ball);
+    R   = dBodyGetRotation(ball);
+    
+    GLdouble trans[3];
+    GLdouble rot[9];
+    for(int i = 0; i < 3; i++) {
+        trans[i] = (GLdouble)pos[i];
+        rot[i] = (GLdouble)R[i];
+    }
+    
+    sceneSetTranslation(&rootNode, trans);
+    sceneSetRotationArray(&rootNode, rot);
+}
+/* END PHYSICS CHUNK */
 
 void handleError(int error, const char *description) {
 	fprintf(stderr, "handleError: %d\n%s\n", error, description);
@@ -71,6 +89,8 @@ void handleKey(GLFWwindow *window, int key, int scancode, int action,
 			camAddDistance(&cam, -0.1);
 		else if (key == GLFW_KEY_J)
 			camAddDistance(&cam, 0.1);
+        if (key == GLFW_KEY_Z)
+			simLoop();
 	}
 }
 
@@ -95,16 +115,14 @@ int initializeScene(void) {
 }
 
 int initializeTex() {
-    if(texInitializeFile(&tiger, "cat.jpg", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
+    char cat[] = "cat.jpg";
+    char *img = cat;
+    if(texInitializeFile(&tiger, img, GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
         return 1;
     }
-    if(texInitializeFile(&huskies, "test.jpg", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 2;
-    }
-    if(texInitializeFile(&crown, "crown.jpg", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
-        return 3;
-    }
-    if(texInitializeFile(&pattern, "test2.png", GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
+    char test2[] = "test2.png";
+    img = test2;
+    if(texInitializeFile(&pattern, img, GL_NEAREST, GL_NEAREST, GL_CLAMP, GL_CLAMP) != 0) {
         return 4;
     }
     sceneSetOneTexture(&rootNode, 0, &tiger);
@@ -114,9 +132,7 @@ int initializeTex() {
 
 void destroyScene(void) {
     texDestroy(&tiger);
-    texDestroy(&huskies);
     texDestroy(&pattern);
-    texDestroy(&crown);
 	meshGLDestroy(&rootMesh);
 	sceneDestroyRecursively(&rootNode);
 }
@@ -168,7 +184,7 @@ void render(void) {
 	/* This animation code is different from that in 520mainCamera.c. */
 	GLdouble rot[3][3], identity[4][4], axis[3] = {1.0, 1.0, 1.0};
 	vecUnit(3, axis, axis);
-	alpha += 0.01;
+	//alpha += 0.01;
 	mat33AngleAxisRotation(alpha, axis, rot);
 	sceneSetRotation(&rootNode, rot);
 	sceneSetOneUniform(&rootNode, 0, 0.5 + 0.5 * sin(alpha * 7.0));
@@ -180,26 +196,6 @@ void render(void) {
 		attrDims, attrLocs, textureLocs);
 }
 
-/* START PHYSICS CHUNK */
-static void simLoop ()
-{
-    const dReal *pos,*R;
-
-    dWorldStep(world,0.05);
-
-    pos = dBodyGetPosition(ball);
-    R   = dBodyGetRotation(ball);
-    
-    GLdouble trans[3];
-    GLdouble rot[9];
-    for(int i = 0; i < 3; i++) {
-        trans[i] = pos[i];
-        rot[i] = R[i];
-    }
-    sceneSetTranslation(&rootNode, trans);
-    sceneSetRotationArray(&rootNode, rot);
-}
-/* END PHYSICS CHUNK */
 
 int main(void) {
     /* START PHYSICS CHUNK */
@@ -208,16 +204,13 @@ int main(void) {
 
     dInitODE();
     world = dWorldCreate();
-    dWorldSetGravity(world,0,0,-0.001);
+    dWorldSetGravity(world,0,-0.5,0);
 
     ball = dBodyCreate(world);
     dMassSetZero(&m1);
     dMassSetSphereTotal(&m1,mass,radius);
     dBodySetMass(ball,&m1);
-    dBodySetPosition(ball, x0, y0, z0);
-
-    dWorldDestroy (world);
-    dCloseODE();
+    dBodySetPosition(ball, rootNode.translation[0], rootNode.translation[1], rootNode.translation[2]);
     /* END PHYSICS CHUNK */
     
     glfwSetErrorCallback(handleError);
@@ -248,8 +241,13 @@ int main(void) {
     GLdouble target[3] = {0.0, 0.0, 0.0};
 	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 512.0, 512.0, 10.0, 
 		M_PI / 4.0, M_PI / 4.0, target);
+    GLdouble trans[3] = {0, 0, 10};
+    camSetTranslation(&cam, trans);
+    GLdouble id[3][3];
+    mat33Identity(id);
+    camSetRotation(&cam, id);
     while (glfwWindowShouldClose(window) == 0) {
-        //simLoop();
+        simLoop();
         render();
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -259,6 +257,11 @@ int main(void) {
     destroyScene();
 	glfwDestroyWindow(window);
     glfwTerminate();
+    
+    /* START PHYSICS CHUNK */
+    dWorldDestroy (world);
+    dCloseODE();
+    /* END PHYSICS CHUNK */
     return 0;
 }
 
