@@ -5,6 +5,8 @@
     clang 590mainShadowing.c /usr/local/gl3w/src/gl3w.o -lglfw -framework OpenGL -framework CoreFoundation
 */
 
+#include <ode/ode.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -32,6 +34,7 @@ double getTime(void) {
 camCamera cam;
 texTexture texH, texV, texW, texT, texL;
 meshGLMesh meshH, meshV, meshW, meshT, meshL;
+meshMesh meshMeshH, meshMeshV;
 sceneNode nodeH, nodeV, nodeW, nodeT, nodeL;
 /* We need just one shadow program, because all of our meshes have the same 
 attribute structure. */
@@ -68,35 +71,35 @@ void handleKey(GLFWwindow *window, int key, int scancode, int action,
 	if (action == GLFW_PRESS && key == GLFW_KEY_L) {
 		camSwitchProjectionType(&cam);
 	} else if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-		if (key == GLFW_KEY_O)
+		if (key == GLFW_KEY_A)
 			camAddTheta(&cam, -0.1);
-		else if (key == GLFW_KEY_P)
+		else if (key == GLFW_KEY_D)
 			camAddTheta(&cam, 0.1);
-		else if (key == GLFW_KEY_I)
+		else if (key == GLFW_KEY_W)
 			camAddPhi(&cam, -0.1);
-		else if (key == GLFW_KEY_K)
+		else if (key == GLFW_KEY_S)
 			camAddPhi(&cam, 0.1);
-		else if (key == GLFW_KEY_U)
-			camAddDistance(&cam, -0.5);
-		else if (key == GLFW_KEY_J)
-			camAddDistance(&cam, 0.5);
-		else if (key == GLFW_KEY_Y) {
+		else if (key == GLFW_KEY_Q)
+			camAddDistance(&cam, -1);
+		else if (key == GLFW_KEY_E)
+			camAddDistance(&cam, 1);
+		else if (key == GLFW_KEY_T) {
 			GLdouble vec[3];
 			vecCopy(3, light.translation, vec);
 			vec[1] += 1.0;
 			lightSetTranslation(&light, vec);
-		} else if (key == GLFW_KEY_H) {
+		} else if (key == GLFW_KEY_G) {
 			GLdouble vec[3];
 			vecCopy(3, light.translation, vec);
 			vec[1] -= 1.0;
 			lightSetTranslation(&light, vec);
 		}
-		else if (key == GLFW_KEY_T) {
+		else if (key == GLFW_KEY_H) {
 			GLdouble vec[3];
 			vecCopy(3, light.translation, vec);
 			vec[0] += 1.0;
 			lightSetTranslation(&light, vec);
-		} else if (key == GLFW_KEY_G) {
+		} else if (key == GLFW_KEY_F) {
 			GLdouble vec[3];
 			vecCopy(3, light.translation, vec);
 			vec[0] -= 1.0;
@@ -110,19 +113,19 @@ midway through, then does not properly deallocate all resources. But that's
 okay, because the program terminates almost immediately after this function 
 returns. */
 int initializeScene(void) {
-	if (texInitializeFile(&texH, "grass.png", GL_LINEAR, GL_LINEAR, 
+	if (texInitializeFile(&texH, "snowygrass.jpg", GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 1;
-    if (texInitializeFile(&texV, "granite.jpg", GL_LINEAR, GL_LINEAR, 
+    if (texInitializeFile(&texV, "snowcliff.jpg", GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 2;
-    if (texInitializeFile(&texW, "water.jpeg", GL_LINEAR, GL_LINEAR, 
+    if (texInitializeFile(&texW, "ice.jpg", GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 3;
     if (texInitializeFile(&texT, "trunk.jpg", GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 4;
-    if (texInitializeFile(&texL, "tree.jpg", GL_LINEAR, GL_LINEAR, 
+    if (texInitializeFile(&texL, "leaves.jpg", GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 5;
 	GLuint attrDims[3] = {3, 2, 3};
@@ -155,28 +158,26 @@ int initializeScene(void) {
 	meshMesh mesh, meshLand;
 	if (meshInitializeLandscape(&meshLand, 12, 12, 5.0, (double *)zs) != 0)
 		return 6;
-	if (meshInitializeDissectedLandscape(&mesh, &meshLand, M_PI / 3.0, 1) != 0)
+	if (meshInitializeDissectedLandscape(&meshMeshH, &meshLand, M_PI / 3.0, 1) != 0)
 		return 7;
 	/* There are now two VAOs per mesh. */
-	meshGLInitialize(&meshH, &mesh, 3, attrDims, 2);
+	meshGLInitialize(&meshH, &meshMeshH, 3, attrDims, 2);
 	meshGLVAOInitialize(&meshH, 0, attrLocs);
 	meshGLVAOInitialize(&meshH, 1, sdwProg.attrLocs);
-	meshDestroy(&mesh);
-	if (meshInitializeDissectedLandscape(&mesh, &meshLand, M_PI / 3.0, 0) != 0)
+	if (meshInitializeDissectedLandscape(&meshMeshV, &meshLand, M_PI / 3.0, 0) != 0)
 		return 8;
 	meshDestroy(&meshLand);
 	double *vert, normal[2];
-	for (int i = 0; i < mesh.vertNum; i += 1) {
-		vert = meshGetVertexPointer(&mesh, i);
+	for (int i = 0; i < meshMeshV.vertNum; i += 1) {
+		vert = meshGetVertexPointer(&meshMeshV, i);
 		normal[0] = -vert[6];
 		normal[1] = vert[5];
 		vert[3] = (vert[0] * normal[0] + vert[1] * normal[1]) / 20.0;
 		vert[4] = vert[2] / 20.0;
 	}
-	meshGLInitialize(&meshV, &mesh, 3, attrDims, 2);
+	meshGLInitialize(&meshV, &meshMeshV, 3, attrDims, 2);
 	meshGLVAOInitialize(&meshV, 0, attrLocs);
 	meshGLVAOInitialize(&meshV, 1, sdwProg.attrLocs);
-	meshDestroy(&mesh);
 	if (meshInitializeLandscape(&mesh, 12, 12, 5.0, (double *)ws) != 0)
 		return 9;
 	meshGLInitialize(&meshW, &mesh, 3, attrDims, 2);
@@ -230,6 +231,20 @@ int initializeScene(void) {
 	return 0;
 }
 
+void initializeTriMesh() {
+    dTriMeshDataID triMeshH = dGeomTriMeshDataCreate();
+    dTriMeshDataID triMeshV = dGeomTriMeshDataCreate();
+//    GLdouble vertXYZH[meshMeshH.vertNum * 3];
+//    for(int i = 0; i < meshMeshH.vertNum * 3; i += meshMeshH.attrDim) {
+//        for(int j = 0; j < 3; j++) {
+//            vertXYZH[(i / meshMeshH.attrDim) + j] = meshMeshH.vert[i + j];
+//        }
+//    }
+    dGeomTriMeshDataBuild(triMeshH, 
+                          meshMeshH.vert, meshMeshH.attrDim, meshMeshH.vertNum,
+                          meshMeshH.tri, meshMeshH.triNum, 3);
+}
+
 void destroyScene(void) {
 	texDestroy(&texH);
 	texDestroy(&texV);
@@ -241,6 +256,8 @@ void destroyScene(void) {
 	meshGLDestroy(&meshW);
 	meshGLDestroy(&meshT);
 	meshGLDestroy(&meshL);
+    meshDestroy(&meshMeshH);
+    meshDestroy(&meshMeshV);
 	sceneDestroyRecursively(&nodeH);
 }
 
@@ -255,7 +272,7 @@ int initializeCameraLight(void) {
 	lightSetType(&light, lightSPOT);
 	vecSet(3, vec, 45.0, 30.0, 20.0);
 	lightShineFrom(&light, vec, M_PI * 3.0 / 4.0, M_PI * 3.0 / 4.0);
-	vecSet(3, vec, 1.0, 0.2, 0.2);
+	vecSet(3, vec, 1.0, 1.0, 1.0);
 	lightSetColor(&light, vec);
 	vecSet(3, vec, 1.0, 0.0, 0.0);
 	lightSetAttenuation(&light, vec);
@@ -265,7 +282,7 @@ int initializeCameraLight(void) {
     GLdouble vec1[3] = {45.0, 30.0, 20.0};
 	lightSetType(&lightStatic, lightSPOT);
 	lightShineFrom(&lightStatic, vec1, M_PI * 3.0 / 4.0, M_PI * 3.0 / 4.0);
-	vecSet(3, vec1, 0.2, 0.2, 0.9);
+	vecSet(3, vec1, 1.0, 1.0, 1.0);
 	lightSetColor(&lightStatic, vec1);
 	vecSet(3, vec1, 1.0, 0.0, 0.0);
 	lightSetAttenuation(&lightStatic, vec1);
@@ -344,7 +361,7 @@ int initializeShaderProgram(void) {
             float a = lightAtt[0] + lightAtt[1] * d + lightAtt[2] * d * d;\
             float diffInt = dot(norDir, litDir) / a;\
             float specInt = dot(refDir, camDir);\
-            float ambInt = 0.1;\
+            float ambInt = 0.2;\
 			if (dot(lightAim, -litDir) < lightCos)\
 				diffInt = 0.0;\
             if (diffInt <= 0.0 || specInt <= 0.0)\
