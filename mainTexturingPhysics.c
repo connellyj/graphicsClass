@@ -4,13 +4,23 @@
 
 /* START PHYSICS CHUNK */
 #include <ode/ode.h>
-/* END PHYSICS CHUNK */
+
+typedef struct {
+  dBodyID body;
+  dGeomID geom;
+} MyObject;
 
 static dWorldID world;
-dBodyID ball;
+MyObject ball;
 const dReal   radius = 1.0;
 const dReal   mass   = 1.0;
 dReal gravity = 0.0;
+
+static dSpaceID space;
+static dGeomID  ground;
+static dJointGroupID contactgroup;
+static int flag = 0;
+/* END PHYSICS CHUNK */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,19 +44,45 @@ GLint unifLocs[1];
 GLint textureLocs[2];
 camCamera cam;
 /* Allocate three meshes and three scene graph nodes. */
-meshGLMesh rootMesh;
-sceneNode rootNode;
+meshGLMesh rootMesh, collideTestMesh;
+sceneNode rootNode, collideTestNode;
 texTexture tiger, pattern;
 
 /* START PHYSICS CHUNK */
+static void nearCallback(void *data, dGeomID o1, dGeomID o2) {
+  const int N = 10;
+  dContact contact[N];
+
+  int isGround = ((ground == o1) || (ground == o2));
+
+  int n =  dCollide(o1,o2,N,&contact[0].geom,sizeof(dContact));
+
+  if (isGround)  {
+    if (n >= 1) flag = 1;
+    else        flag = 0;
+    for (int i = 0; i < n; i++) {
+      contact[i].surface.mode = dContactBounce;
+      contact[i].surface.mu   = dInfinity;
+      contact[i].surface.bounce     = 0.9; // (0.0~1.0) restitution parameter
+      contact[i].surface.bounce_vel = 0.0; // minimum incoming velocity for bounce
+      dJointID c = dJointCreateContact(world,contactgroup,&contact[i]);
+      dJointAttach (c,dGeomGetBody(contact[i].geom.g1),dGeomGetBody(contact[i].geom.g2));
+    }
+  }
+}
+
 static void simLoop ()
 {
     const dReal *pos,*R;
     
+    dSpaceCollide(space,0,&nearCallback);
+    
     dWorldStep(world,0.05);
     
-    pos = dBodyGetPosition(ball);
-    R   = dBodyGetRotation(ball);
+    dJointGroupEmpty(contactgroup);
+    
+    pos = dBodyGetPosition(ball.body);
+    R   = dBodyGetRotation(ball.body);
     
     GLdouble trans[3];
     GLdouble rot[9];
@@ -111,12 +147,21 @@ int initializeScene(void) {
 		return 1;
 	meshGLInitialize(&rootMesh, &mesh);
 	meshDestroy(&mesh);
+	if (meshInitializeBox(&mesh, -2.5, 2.5, -0.05, 0.05, -2.5, 2.5) != 0)
+		return 1;
+	meshGLInitialize(&collideTestMesh, &mesh);
+	meshDestroy(&mesh);
 	/* Initialize scene graph nodes. */
-	if (sceneInitialize(&rootNode, 2, 2, &rootMesh, NULL, NULL) != 0)
+	if (sceneInitialize(&rootNode, 2, 2, &rootMesh, NULL, &collideTestNode) != 0)
+		return 2;
+    if (sceneInitialize(&collideTestNode, 2, 2, &collideTestMesh, NULL, NULL) != 0)
 		return 2;
 	/* Customize the uniforms. */
 	GLdouble unif[2] = {1.0, 1.0};
 	sceneSetUniform(&rootNode, unif);
+    sceneSetUniform(&collideTestNode, unif);
+    GLdouble trans[3] = {0, -2, 0};
+    sceneSetTranslation(&collideTestNode, trans);
 	return 0;
 }
 
@@ -133,6 +178,8 @@ int initializeTex() {
     }
     sceneSetOneTexture(&rootNode, 0, &tiger);
     sceneSetOneTexture(&rootNode, 1, &pattern);
+    sceneSetOneTexture(&collideTestNode, 0, &pattern);
+    sceneSetOneTexture(&collideTestNode, 1, &pattern);
     return 0;
 }
 
@@ -204,21 +251,6 @@ void render(void) {
 
 
 int main(void) {
-    /* START PHYSICS CHUNK */
-    dReal x0 = 0.0, y0 = 0.0, z0 = 1.0;
-    dMass m1;
-
-    dInitODE();
-    world = dWorldCreate();
-    dWorldSetGravity(world,0,gravity,0);
-
-    ball = dBodyCreate(world);
-    dMassSetZero(&m1);
-    dMassSetSphereTotal(&m1,mass,radius);
-    dBodySetMass(ball,&m1);
-    dBodySetPosition(ball, rootNode.translation[0], rootNode.translation[1], rootNode.translation[2]);
-    /* END PHYSICS CHUNK */
-    
     glfwSetErrorCallback(handleError);
     if (glfwInit() == 0)
         return 1;
@@ -247,11 +279,35 @@ int main(void) {
     GLdouble target[3] = {0.0, 0.0, 0.0};
 	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 512.0, 512.0, 10.0, 
 		M_PI / 4.0, M_PI / 4.0, target);
-    GLdouble trans[3] = {0, 0, 10};
+    GLdouble trans[3] = {0, 0, 50};
     camSetTranslation(&cam, trans);
     GLdouble id[3][3];
     mat33Identity(id);
     camSetRotation(&cam, id);
+    
+    /* START PHYSICS CHUNK */
+    dReal x0 = 0.0, y0 = 0.0, z0 = 1.0;
+    dMass m1;
+
+    dInitODE();
+    world = dWorldCreate();
+    space = dHashSpaceCreate(0);
+    contactgroup = dJointGroupCreate(0);
+    dWorldSetGravity(world,0,gravity,0);
+
+    ground = dCreateBox(space, 5, 0.1, 5);
+    dGeomSetPosition(ground, 0, -2, 0);
+    
+    ball.body = dBodyCreate(world);
+    dMassSetZero(&m1);
+    dMassSetSphereTotal(&m1,mass,radius);
+    dBodySetMass(ball.body,&m1);
+    dBodySetPosition(ball.body, 0, 6, 0);
+    
+    ball.geom = dCreateSphere(space,radius);
+    dGeomSetBody(ball.geom,ball.body);
+    /* END PHYSICS CHUNK */
+    
     while (glfwWindowShouldClose(window) == 0) {
         simLoop();
         render();
