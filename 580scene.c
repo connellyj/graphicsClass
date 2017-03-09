@@ -83,6 +83,11 @@ void sceneSetRotation(sceneNode *node, GLdouble rot[3][3]) {
 	vecCopy(9, (GLdouble *)rot, (GLdouble *)(node->rotation));
 }
 
+/* Sets the node's rotation. */
+void sceneSetRotationArray(sceneNode *node, GLdouble rot[9]) {
+	vecCopy(9, rot, (GLdouble *)(node->rotation));
+}
+
 /* Sets the node's translation. */
 void sceneSetTranslation(sceneNode *node, GLdouble transl[3]) {
 	vecCopy(3, transl, node->translation);

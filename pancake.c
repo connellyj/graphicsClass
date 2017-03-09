@@ -15,7 +15,7 @@ typedef struct {
 
 static dWorldID world;
 PhysicsObject ball;
-const dReal radius = 3.0;
+const dReal radius = 1.0;
 const dReal mass = 1.0;
 
 static dSpaceID space;
@@ -108,12 +108,9 @@ static void simLoop () {
         rot[i] = (GLdouble)R[i];
     }
     
-    GLdouble mat[9];
-    mat33Transpose((double(*)[3])(rot), (double(*)[3])(mat));
-    
     sceneSetTranslation(&nodeBall, trans);
-    //sceneSetRotationArray(&nodeBall, mat);
-    printf("%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n", mat[0],mat[1],mat[2],mat[3],mat[4],mat[5],mat[6],mat[7],mat[8]);
+    sceneSetRotationArray(&nodeBall, rot);
+    printf("%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n", rot[0],rot[1],rot[2],rot[3],rot[4],rot[5],rot[6],rot[7],rot[8]);
     printf("%f, %f, %f\n", trans[0], trans[1], trans[2]);
 }
 /* END PHYSICS CHUNK */
@@ -613,9 +610,12 @@ int main(void) {
     dMassSetSphereTotal(&m1,mass,radius);
     dBodySetMass(ball.body,&m1);
     dBodySetPosition(ball.body, nodeBall.translation[0], nodeBall.translation[1], nodeBall.translation[2]);
+    dMatrix3 mat;
+    dRSetIdentity(mat);
+    dBodySetRotation(ball.body, mat);
     
-    ball.geom = dCreateSphere(space, radius);
-    dGeomSetBody(ball.geom, ball.body);
+    ball.geom = dCreateSphere(space,radius);
+    dGeomSetBody(ball.geom,ball.body);
     /* END PHYSICS CHUNK */
     
     while (glfwWindowShouldClose(window) == 0) {
