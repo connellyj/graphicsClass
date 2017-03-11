@@ -6,6 +6,7 @@
 */
 
 /* START PHYSICS CHUNK */
+// FIX ROTATION: treating a 3x4 weirdo thing like a 3x3 matrix, oops
 #include <ode/ode.h>
 
 typedef struct {
@@ -104,17 +105,16 @@ static void simLoop () {
     for(int i = 0; i < 3; i++) {
         trans[i] = (GLdouble)pos[i];
     }
-    for(int i = 0; i < 9; i++) {
-        rot[i] = (GLdouble)R[i];
+    int offset = 0;
+    for(int i = 0; i < 9; i += 3) {
+        rot[i] = (GLdouble)R[i + offset];
+        rot[i + 1] = (GLdouble)R[i + 1 + offset];
+        rot[i + 2] = (GLdouble)R[i + 2 + offset];
+        offset++;
     }
     
-    GLdouble mat[9];
-    mat33Transpose((double(*)[3])(rot), (double(*)[3])(mat));
-    
     sceneSetTranslation(&nodeBall, trans);
-    //sceneSetRotationArray(&nodeBall, mat);
-    printf("%f, %f, %f\n%f, %f, %f\n%f, %f, %f\n", mat[0],mat[1],mat[2],mat[3],mat[4],mat[5],mat[6],mat[7],mat[8]);
-    printf("%f, %f, %f\n", trans[0], trans[1], trans[2]);
+    sceneSetRotationArray(&nodeBall, rot);
 }
 /* END PHYSICS CHUNK */
 
