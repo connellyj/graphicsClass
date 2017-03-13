@@ -92,3 +92,9 @@ void vecOpenGL(int dim, GLdouble v[], GLfloat openGL[]) {
 	for (int i = 0; i < dim; i += 1)
 		openGL[i] = v[i];
 }
+
+void vec3ToOpenGL(GLdouble openGL[], float m[]) {
+    for(int i = 0; i < 3; i++) {
+        openGL[i] = (GLdouble) m[i];
+    }
+}

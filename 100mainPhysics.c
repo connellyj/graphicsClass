@@ -269,6 +269,7 @@ void destroyScene(void) {
 	meshGLDestroy(&meshL);
     meshGLDestroy(&meshBall);
 	sceneDestroyRecursively(&nodeH);
+    pPhysicsDestroy();
 }
 
 /* Returns 0 on success, non-zero on failure. Warning: If initialization fails 
@@ -439,7 +440,7 @@ void render(void) {
     GLdouble posGL[3];
     pGetPosition(nodeBall.physicsLoc, pos);
     pGetRotation(nodeBall.physicsLoc, rot);
-    vecOpenGL(3, posGL, pos);
+    vec3ToOpenGL(posGL, pos);
     sceneSetTranslation(&nodeBall, posGL);
     mat33ToOpenGL(rotGL, rot); 
     sceneSetRotation(&nodeBall, rotGL);
@@ -451,7 +452,7 @@ void render(void) {
 	glGetIntegerv(GL_VIEWPORT, viewport);
 	/* For each shadow-casting light, render its shadow map using minimal 
 	uniforms and textures. */
-	GLint sdwTextureLocs[2] = {-1 };
+	GLint sdwTextureLocs[2] = {-1, -1};
 	shadowMapRender(&sdwMap, &sdwProg, &light, -100.0, -1.0);
     sceneRender(&nodeH, identity, sdwProg.modelingLoc, 0, NULL, NULL, 1, 
 		sdwTextureLocs);
@@ -527,6 +528,7 @@ int main(void) {
     if (initializeScene() != 0)
     	return 5;
     
+    pInitPhysics(10);
     sceneSetPhysicsLoc(&nodeBall, pInitSphere(pGEOM_AND_BODY, 1.0, 3.0));
     pSetPosition(nodeBall.physicsLoc, nodeBall.translation[0], 
                  nodeBall.translation[1], nodeBall.translation[2]);
@@ -538,6 +540,7 @@ int main(void) {
     sceneSetPhysicsLoc(&nodeW, pInitBox(pGEOM_ONLY, 0.0, 72.0, 72.0, 5.0));
     pSetPosition(nodeW.physicsLoc, 1.5 * nodeW.translation[0], 
                  1.5 * nodeW.translation[1], nodeW.translation[2]);
+    pSetGravity(0.0, 0.0, -0.5);
     
     while (glfwWindowShouldClose(window) == 0) {
     	oldTime = newTime;
