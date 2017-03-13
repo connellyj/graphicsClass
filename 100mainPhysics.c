@@ -23,12 +23,12 @@ double getTime(void) {
 }
 
 #include "500shader.c"
-#include "530vector.c"
+#include "1000vector.c"
 #include "580mesh.c"
-#include "590matrix.c"
+#include "1000matrix.c"
 #include "520camera.c"
 #include "540texture.c"
-#include "580scene.c"
+#include "1000scene.c"
 #include "560light.c"
 #include "590shadow.c"
 
@@ -433,6 +433,17 @@ int initializeShaderProgram(void) {
 }
 
 void render(void) {
+    float pos[3];
+    float rot[3][3];
+    GLdouble rotGL[3][3];
+    GLdouble posGL[3];
+    pGetPosition(nodeBall.physicsLoc, pos);
+    pGetRotation(nodeBall.physicsLoc, rot);
+    vecOpenGL(3, posGL, pos);
+    sceneSetTranslation(&nodeBall, posGL);
+    mat33ToOpenGL(rotGL, rot); 
+    sceneSetRotation(&nodeBall, rotGL);
+    
 	GLdouble identity[4][4];
 	mat44Identity(identity);
 	/* Save the viewport transformation. */
@@ -515,12 +526,26 @@ int main(void) {
 		return 4;
     if (initializeScene() != 0)
     	return 5;
+    
+    sceneSetPhysicsLoc(&nodeBall, pInitSphere(pGEOM_AND_BODY, 1.0, 3.0));
+    pSetPosition(nodeBall.physicsLoc, nodeBall.translation[0], 
+                 nodeBall.translation[1], nodeBall.translation[2]);
+    sceneSetPhysicsLoc(&nodeL, pInitSphere(pGEOM_ONLY, 0.0, 5.0));
+    pSetPosition(nodeL.physicsLoc, 40.0, 28.0, 13.0);
+    sceneSetPhysicsLoc(&nodeT, pInitCapsule(pGEOM_ONLY, 0.0, 1.0, 10.0));
+    pSetPosition(nodeT.physicsLoc, nodeT.translation[0], 
+                 nodeT.translation[1], nodeT.translation[2]);
+    sceneSetPhysicsLoc(&nodeW, pInitBox(pGEOM_ONLY, 0.0, 72.0, 72.0, 5.0));
+    pSetPosition(nodeW.physicsLoc, 1.5 * nodeW.translation[0], 
+                 1.5 * nodeW.translation[1], nodeW.translation[2]);
+    
     while (glfwWindowShouldClose(window) == 0) {
     	oldTime = newTime;
     	newTime = getTime();
     	if (floor(newTime) - floor(oldTime) >= 1.0)
 			fprintf(stderr, "main: %f frames/sec\n", 1.0 / (newTime - oldTime));
 		render();
+        pSimLoop();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
