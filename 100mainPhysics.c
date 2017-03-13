@@ -1,13 +1,11 @@
-/* Edited by Julia Connelly and Kerim Celik, 02/24/2017 */
+/*** Written by Julia Connelly and Kerim Celik, 03/15/2017 ***/
 
 
 /* On macOS, compile with...
     clang++ 100mainPhysics.c /usr/local/gl3w/src/gl3w.o -lglfw -framework OpenGL -framework CoreFoundation -l ode
 */
 
-#include <ode/ode.h>
 #include "physics.c"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -309,6 +307,23 @@ int initializeCameraLight(void) {
 	return 0;
 }
 
+/* Initializes the physics simulation and associates physics objects with graphics ones */
+void initPhysics() {
+    pInitPhysics(10);
+    sceneSetPhysicsLoc(&nodeBall, pInitSphere(pGEOM_AND_BODY, 1.0, 3.0));
+    pSetPosition(nodeBall.physicsLoc, nodeBall.translation[0] + 3.0, 
+                 nodeBall.translation[1], nodeBall.translation[2]);
+    sceneSetPhysicsLoc(&nodeL, pInitSphere(pGEOM_ONLY, 0.0, 5.0));
+    pSetPosition(nodeL.physicsLoc, 40.0, 28.0, 12.0);
+    sceneSetPhysicsLoc(&nodeT, pInitCapsule(pGEOM_ONLY, 0.0, 1.0, 10.0));
+    pSetPosition(nodeT.physicsLoc, nodeT.translation[0], 
+                 nodeT.translation[1], nodeT.translation[2]);
+    sceneSetPhysicsLoc(&nodeW, pInitBox(pGEOM_ONLY, 0.0, 55.0, 55.0, 5.0));
+    pSetPosition(nodeW.physicsLoc, 0.5 * 55.0 + nodeW.translation[0], 
+                 0.5 * 55.0 + nodeW.translation[1], nodeW.translation[2]);
+    pSetGravity(0.0, 0.0, -0.25);
+}
+
 /* Returns 0 on success, non-zero on failure. */
 int initializeShaderProgram(void) {
 	GLchar vertexCode[] = "\
@@ -433,7 +448,8 @@ int initializeShaderProgram(void) {
 	return (program == 0);
 }
 
-void render(void) {
+/* Fetches the updated position and rotation of all physics objects */
+void physicsRender() {
     float pos[3];
     float rot[3][3];
     GLdouble rotGL[3][3];
@@ -444,6 +460,10 @@ void render(void) {
     sceneSetTranslation(&nodeBall, posGL);
     mat33ToOpenGL(rotGL, rot); 
     sceneSetRotation(&nodeBall, rotGL);
+}
+
+void render(void) {
+    physicsRender();
     
 	GLdouble identity[4][4];
 	mat44Identity(identity);
@@ -527,28 +547,16 @@ int main(void) {
 		return 4;
     if (initializeScene() != 0)
     	return 5;
-    
-    pInitPhysics(10);
-    sceneSetPhysicsLoc(&nodeBall, pInitSphere(pGEOM_AND_BODY, 1.0, 3.0));
-    pSetPosition(nodeBall.physicsLoc, nodeBall.translation[0], 
-                 nodeBall.translation[1], nodeBall.translation[2]);
-    sceneSetPhysicsLoc(&nodeL, pInitSphere(pGEOM_ONLY, 0.0, 5.0));
-    pSetPosition(nodeL.physicsLoc, 40.0, 28.0, 13.0);
-    sceneSetPhysicsLoc(&nodeT, pInitCapsule(pGEOM_ONLY, 0.0, 1.0, 10.0));
-    pSetPosition(nodeT.physicsLoc, nodeT.translation[0], 
-                 nodeT.translation[1], nodeT.translation[2]);
-    sceneSetPhysicsLoc(&nodeW, pInitBox(pGEOM_ONLY, 0.0, 72.0, 72.0, 5.0));
-    pSetPosition(nodeW.physicsLoc, 1.5 * nodeW.translation[0], 
-                 1.5 * nodeW.translation[1], nodeW.translation[2]);
-    pSetGravity(0.0, 0.0, -0.5);
+    initPhysics();
     
     while (glfwWindowShouldClose(window) == 0) {
     	oldTime = newTime;
     	newTime = getTime();
     	if (floor(newTime) - floor(oldTime) >= 1.0)
 			fprintf(stderr, "main: %f frames/sec\n", 1.0 / (newTime - oldTime));
-		render();
+        /* step physics simulation forward */
         pSimLoop();
+		render();
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

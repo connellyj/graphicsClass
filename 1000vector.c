@@ -1,4 +1,4 @@
-/*** Methods filled in by Julia Connelly and Kerim Celik 02/17/2016 ***/
+/*** Methods filled in by Julia Connelly and Kerim Celik 03/15/2016 ***/
 
 #include <stdio.h>
 
@@ -93,6 +93,7 @@ void vecOpenGL(int dim, GLdouble v[], GLfloat openGL[]) {
 		openGL[i] = v[i];
 }
 
+/* Converts the contents of a 3-dimensional vector from floats to GLdoubles */
 void vec3ToOpenGL(GLdouble openGL[], float m[]) {
     for(int i = 0; i < 3; i++) {
         openGL[i] = (GLdouble) m[i];

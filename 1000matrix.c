@@ -1,4 +1,4 @@
-/*** Methods filled in by Kerim Celik and Julia Connelly 02/24/2017 ***/
+/*** Methods filled in by Kerim Celik and Julia Connelly 03/15/2017 ***/
 
 #include <stdio.h>
 
@@ -308,6 +308,7 @@ void mat44Identity(GLdouble m[4][4]){
     }
 }
 
+/* Converts the contents of a 3 by 3 matrix from floats to GLdoubles */
 void mat33ToOpenGL(GLdouble openGL[3][3], float m[3][3]) {
     for (int i = 0; i < 3; i += 1)
 		for (int j = 0; j < 3; j += 1)

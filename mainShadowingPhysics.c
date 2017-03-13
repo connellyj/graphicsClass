@@ -1,12 +1,14 @@
-/* Edited by Julia Connelly and Kerim Celik, 02/24/2017 */
-
+/*** Written by Julia Connelly and Kerim Celik, 03/15/2017 ***/
 
 /* On macOS, compile with...
     clang 590mainShadowing.c /usr/local/gl3w/src/gl3w.o -lglfw -framework OpenGL -framework CoreFoundation
 */
 
+/* Demo built for class presentation; just inserted physics interactions
+ * directly into mainTexturing.c without worrying about API creation
+ */
+
 /* START PHYSICS CHUNK */
-// FIX ROTATION: treating a 3x4 weirdo thing like a 3x3 matrix, oops
 #include <ode/ode.h>
 
 typedef struct {

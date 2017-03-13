@@ -1,6 +1,12 @@
+/*** Written by Julia Connelly and Kerim Celik, 03/15/2017 ***/
+
 /* On macOS, compile with...
     clang++ mainTexturingPhysics.c -lglfw -framework OpenGL -l ode
 */
+
+/* Demo built for class presentation; just inserted physics interactions
+ * directly into mainTexturing.c without worrying about API creation
+ */
 
 /* START PHYSICS CHUNK */
 #include <ode/ode.h>

@@ -1,5 +1,4 @@
-/* A few methods by Julia Connelly and Kerim Celik, 02/24/2017 */
-
+/*** Methods filled in by Kerim Celik and Julia Connelly 03/15/2017 ***/
 
 /*** Creation and destruction ***/
 
@@ -49,6 +48,9 @@ void sceneDestroy(sceneNode *node) {
 
 /*** Accessors ***/
 
+/* Sets the index representing the location of the 
+ * associated physics object in the physics simulation 
+ */
 void sceneSetPhysicsLoc(sceneNode *node, int loc) {
     node->physicsLoc = loc;
 }
