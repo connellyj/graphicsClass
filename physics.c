@@ -1,4 +1,4 @@
-// by JC and KC on ...
+// by JC and KC on ... NEED TO DESTROY PHYSICS OBJECTS
 #include <ode/ode.h>
 
 #define pGEOM_ONLY 0
@@ -95,6 +95,9 @@ int pInitSphere(pPhysicsSimulation *sim, int option, double mass, double rad){
         newObj.body = NULL;
         // check to see if mass is not garbage by checking if the object has a body
     }
+    if(option == pBODY_ONLY) {
+        newObj.geom = NULL;
+    }
     else if(option == pBODY_ONLY) newObj.geom = NULL;
     if (option == pGEOM_ONLY || option == pGEOM_AND_BODY){
         newObj.geom = dCreateSphere((sim->collider).space, (dReal) rad);
@@ -103,7 +106,7 @@ int pInitSphere(pPhysicsSimulation *sim, int option, double mass, double rad){
         newObj.body = dBodyCreate(sim->world);
         dMass m;
         dMassSetZero(&m);
-        dMassSetSphereTotal(&m, mass, rad);
+        dMassSetSphereTotal(&m, (dReal) mass, (dReal) rad);
         dBodySetMass(newObj.body, &m);
         newObj.massObj = m;
     }
@@ -112,7 +115,7 @@ int pInitSphere(pPhysicsSimulation *sim, int option, double mass, double rad){
     }
     (sim->objects)[sim->objIndex] = newObj;
     sim->objIndex++;
-    return 0;
+    return (sim->objIndex) - 1;
 }
 
 int pInitBox(pPhysicsSimulation *sim, int option, double mass, double sideX, double sideY, double sideZ){
@@ -126,6 +129,9 @@ int pInitBox(pPhysicsSimulation *sim, int option, double mass, double sideX, dou
     if(option == pGEOM_ONLY){
         newObj.body = NULL;
     }
+    if(option == pBODY_ONLY) {
+        newObj.geom = NULL;
+    }
     else if(option == pBODY_ONLY) newObj.geom = NULL;
     if (option == pGEOM_ONLY || option == pGEOM_AND_BODY){
         newObj.geom = dCreateBox((sim->collider).space, (dReal) sideX, (dReal) sideY, (dReal) sideZ);
@@ -134,7 +140,7 @@ int pInitBox(pPhysicsSimulation *sim, int option, double mass, double sideX, dou
         newObj.body = dBodyCreate(sim->world);
         dMass m;
         dMassSetZero(&m);
-        dMassSetBoxTotal(&m, mass, sideX, sideY, sideZ);
+        dMassSetBoxTotal(&m, (dReal) mass, (dReal) sideX, (dReal) sideY, (dReal) sideZ);
         dBodySetMass(newObj.body, &m);
         newObj.massObj = m;
     }
@@ -143,7 +149,7 @@ int pInitBox(pPhysicsSimulation *sim, int option, double mass, double sideX, dou
     }
     (sim->objects)[sim->objIndex] = newObj;
     sim->objIndex++;
-    return 0;
+    return (sim->objIndex) - 1;
 }
 
 int pInitCapsule(pPhysicsSimulation *sim, int option, double mass, double rad, double length){
@@ -157,6 +163,9 @@ int pInitCapsule(pPhysicsSimulation *sim, int option, double mass, double rad, d
     if(option == pGEOM_ONLY){
         newObj.body = NULL;
     }
+    if(option == pBODY_ONLY) {
+        newObj.geom = NULL;
+    }
     else if(option == pBODY_ONLY) newObj.geom = NULL;
     if (option == pGEOM_ONLY || option == pGEOM_AND_BODY){
         newObj.geom = dCreateCapsule((sim->collider).space, (dReal) rad, (dReal) length);
@@ -166,7 +175,7 @@ int pInitCapsule(pPhysicsSimulation *sim, int option, double mass, double rad, d
         dMass m;
         dMassSetZero(&m);
         // assumes that the capsule's mass is oriented along it's y-axis (fix later?)
-        dMassSetCapsuleTotal(&m, mass, 2, rad, length);
+        dMassSetCapsuleTotal(&m, (dReal) mass, 2, (dReal) rad, (dReal) length);
         dBodySetMass(newObj.body, &m);
         newObj.massObj = m;
     }
@@ -175,7 +184,7 @@ int pInitCapsule(pPhysicsSimulation *sim, int option, double mass, double rad, d
     }
     (sim->objects)[sim->objIndex] = newObj;
     sim->objIndex++;
-    return 0;
+    return (sim->objIndex) - 1;
 }
 
 int pInitCylinder(pPhysicsSimulation *sim, int option, double mass, double rad, double length){
@@ -189,6 +198,9 @@ int pInitCylinder(pPhysicsSimulation *sim, int option, double mass, double rad, 
     if(option == pGEOM_ONLY){
         newObj.body = NULL;
     }
+    if(option == pBODY_ONLY) {
+        newObj.geom = NULL;
+    }
     else if(option == pBODY_ONLY) newObj.geom = NULL;
     if (option == pGEOM_ONLY || option == pGEOM_AND_BODY){
         newObj.geom = dCreateCylinder((sim->collider).space, (dReal) rad, (dReal) length);
@@ -198,7 +210,7 @@ int pInitCylinder(pPhysicsSimulation *sim, int option, double mass, double rad, 
         dMass m;
         dMassSetZero(&m);
         // assumes that the cylinder's mass is oriented along it's y-axis (fix later?)
-        dMassSetCylinderTotal(&m, mass, 2, rad, length);
+        dMassSetCylinderTotal(&m, (dReal) mass, 2, (dReal) rad, (dReal) length);
         dBodySetMass(newObj.body, &m);
         newObj.massObj = m;
     }
@@ -207,9 +219,53 @@ int pInitCylinder(pPhysicsSimulation *sim, int option, double mass, double rad, 
     }
     (sim->objects)[sim->objIndex] = newObj;
     sim->objIndex++;
-    return 0;
+    return (sim->objIndex) - 1;
 }
 
-int main(void) {
-    return 0;
+void pMat33Physics(float m[3][3], dMatrix3 p) {
+    int offset = 0;
+    for(int i = 0; i < 3; i++) {
+        p[offset] = m[i][0];
+        p[1 + offset] = m[i][1];
+        p[2 + offset] = m[i][2];
+        offset += 4;
+    }
+}
+
+void pSetPosition(pPhysicsSimulation *sim, int objLocation, double x, double y, double z) {
+    dBodyID body = (sim->objects)[objLocation].body;
+    dGeomID geom = (sim->objects)[objLocation].geom;
+    if(body != NULL) dBodySetPosition(body, (dReal) x, (dReal) y, (dReal) z);
+    if(geom != NULL) dGeomSetPosition(geom, (dReal) x, (dReal) y, (dReal) z);
+}
+
+void pSetRotation(pPhysicsSimulation *sim, int objLocation, float mat[3][3]) {
+    dBodyID body = (sim->objects)[objLocation].body;
+    dGeomID geom = (sim->objects)[objLocation].geom; 
+    dMatrix3 rot;
+    pMat33Physics(mat, rot);
+    if(body != NULL) dBodySetRotation(body, rot);
+    if(geom != NULL) dGeomSetRotation(geom, rot);
+}
+
+void nearCallback(void *data, dGeomID o1, dGeomID o2) {
+    const int N = 10;
+    dContact contact[N];
+
+    int n =  dCollide(o1,o2,N,&contact[0].geom,sizeof(dContact));
+
+    for (int i = 0; i < n; i++) {
+        contact[i].surface.mode = dContactBounce;
+        contact[i].surface.mu   = dInfinity;
+        contact[i].surface.bounce     = 0.2; // (0.0~1.0) restitution parameter
+        contact[i].surface.bounce_vel = 0.0; // minimum incoming velocity for bounce
+        dJointID c = dJointCreateContact(world,contactgroup,&contact[i]);
+        dJointAttach (c,dGeomGetBody(contact[i].geom.g1),dGeomGetBody(contact[i].geom.g2));
+    }
+}
+
+void simLoop(pPhysicsSimulation *sim) {
+    dSpaceCollide((sim->collider).space, 0, &nearCallback);
+    dWorldStep(sim->world, 0.05);
+    dJointGroupEmpty((sim->collider).contactgroup);
 }
