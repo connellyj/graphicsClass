@@ -1,0 +1,89 @@
+DID NOT WORK:
+
+node rotation: 1.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 1.000000 
+node translation: 0.000000, 0.000000, 0.000000
+node unifDim: 2
+node texNum: 2
+mesh triNum: 2048
+mesh vertNum: 1058
+mesh attrDim: 8
+texture width: 4096
+texture height: 2048
+texture texelDim: 3
+texture openGL: 1
+
+node rotation: 1.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 1.000000 
+node translation: 1.000000, 0.000000, 0.000000
+node unifDim: 2
+node texNum: 2
+mesh triNum: 12
+mesh vertNum: 24
+mesh attrDim: 8
+texture width: 1024
+texture height: 512
+texture texelDim: 3
+texture openGL: 3
+
+node rotation: 1.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 1.000000 
+node translation: 0.000000, 1.000000, 0.000000
+node unifDim: 2
+node texNum: 2
+mesh triNum: 960
+mesh vertNum: 497
+mesh attrDim: 8
+texture width: 512
+texture height: 215
+texture texelDim: 3
+texture openGL: 2
+
+
+
+WORKED:
+
+node rotation: 1.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 1.000000 
+node translation: 0.000000, 0.000000, 0.000000
+node unifDim: 2
+node texNum: 2
+mesh triNum: 2048
+mesh vertNum: 1058
+mesh attrDim: 8
+texture width: 4096
+texture height: 2048
+texture texelDim: 3
+texture openGL: 1
+
+node rotation: 1.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 1.000000 
+node translation: 1.000000, 0.000000, 0.000000
+node unifDim: 2
+node texNum: 2
+mesh triNum: 12
+mesh vertNum: 24
+mesh attrDim: 8
+texture width: 1024
+texture height: 512
+texture texelDim: 3
+texture openGL: 3
+
+node rotation: 1.000000 0.000000 0.000000 
+0.000000 1.000000 0.000000 
+0.000000 0.000000 1.000000 
+node translation: 0.000000, 1.000000, 0.000000
+node unifDim: 2
+node texNum: 2
+mesh triNum: 960
+mesh vertNum: 497
+mesh attrDim: 8
+texture width: 512
+texture height: 215
+texture texelDim: 3
+texture openGL: 2

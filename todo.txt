@@ -1,9 +1,0 @@
-- NEED TO CITE SOURCES OR SAD!!
-- Need to be able to delete physics objects
-- Tell the user when things collide
-- comments (done for core API)
-- write getters for all properties 
-- maybe add more collision determining values (check docs)
-- multiple worlds and spaces??
-- capsule/cylinder body orientation? why?
-- setter/getter one-line comments?

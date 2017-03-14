@@ -1,0 +1,8 @@
+- Tell the user when things collide
+- comments (done for core API)
+- write getters for all properties 
+- maybe add more collision determining values (check docs)
+- capsule/cylinder body orientation? why?
+- write demos for things
+- write mini-paper thing
+- joints!
