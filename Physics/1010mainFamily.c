@@ -74,6 +74,15 @@ void handleKey(GLFWwindow *window, int key, int scancode, int action,
 	if (action == GLFW_PRESS && key == GLFW_KEY_L) {
 		camSwitchProjectionType(&cam);
 	} else if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        if(key == GLFW_KEY_UP) {
+            nodeBall.translation[2] += 1.0;
+        }else if(key == GLFW_KEY_DOWN) {
+            nodeBall.translation[2] -= 1.0;
+        }else if(key == GLFW_KEY_RIGHT) {
+            nodeBall.translation[0] += 1.0;
+        }else if(key == GLFW_KEY_LEFT) {
+            nodeBall.translation[0] -= 1.0;
+        }
 		if (key == GLFW_KEY_A)
 			camAddTheta(&cam, -0.1);
 		else if (key == GLFW_KEY_D)
@@ -244,7 +253,7 @@ int initializeScene(void) {
 	sceneSetTranslation(&nodeT, trans);
 	vecSet(3, trans, 0.0, 0.0, 7.0);
 	sceneSetTranslation(&nodeL, trans);
-	vecSet(3, trans, 0.0, 0.0, 4.0);
+	vecSet(3, trans, 0.0, 0.0, -10.0);
     sceneSetTranslation(&nodeChild, trans);
     vecSet(3, trans, 38.0, 28.0, 55.0);
 	sceneSetTranslation(&nodeBall, trans);
@@ -330,6 +339,9 @@ int initializeCameraLight(void) {
 	return 0;
 }
 
+GLdouble prevPhysChild[3];
+GLdouble prevPhysBall[3];
+
 /* Initializes the physics simulation and associates physics objects with graphics ones */
 void initPhysics() {
     pInitPhysics(10);
@@ -348,6 +360,12 @@ void initPhysics() {
     pSetPosition(nodeW.physicsLoc, 0.5 * 55.0 + nodeW.translation[0], 
                  0.5 * 55.0 + nodeW.translation[1], nodeW.translation[2]);
     pSetGravity(0.0, 0.0, -0.25);
+    prevPhysChild[0] = nodeBall.translation[0];
+    prevPhysChild[1] = nodeBall.translation[1];
+    prevPhysChild[2] = nodeBall.translation[2] + nodeChild.translation[2];
+    prevPhysBall[0] = nodeBall.translation[0];
+    prevPhysBall[1] = nodeBall.translation[1];
+    prevPhysBall[2] = nodeBall.translation[2];
 }
 
 /* Returns 0 on success, non-zero on failure. */
@@ -480,24 +498,37 @@ void physicsRender() {
     double rot[3][3];
     GLdouble rotGL[3][3];
     GLdouble posGL[3];
-    pGetPosition(nodeBall.physicsLoc, pos);
-    pGetRotation(nodeBall.physicsLoc, rot);
-    vec3ToOpenGL(posGL, pos);
-    sceneSetTranslation(&nodeBall, posGL);
-    mat33ToOpenGL(rotGL, rot); 
-    sceneSetRotation(&nodeBall, rotGL);
     
     pGetPosition(nodeChild.physicsLoc, pos);
-    pGetRotation(nodeChild.physicsLoc, rot);
     vec3ToOpenGL(posGL, pos);
-    sceneSetTranslation(&nodeChild, posGL);
+    GLdouble dif[3];
+    vecSubtract(3, prevPhysChild, pos, dif);
+    GLdouble trans[3];
+    vecSubtract(3, nodeChild.translation, dif, trans);
+    sceneSetTranslation(&nodeChild, trans);
+    pSetPosition(nodeChild.physicsLoc, nodeChild.worldPos[0] - dif[0], nodeChild.worldPos[1] - dif[1], nodeChild.worldPos[2] - dif[2]);
+    for(int i = 0; i < 3; i++) {
+        prevPhysChild[i] = nodeChild.worldPos[i] - dif[i];
+    }
+    pGetRotation(nodeChild.physicsLoc, rot);
     mat33ToOpenGL(rotGL, rot); 
     sceneSetRotation(&nodeChild, rotGL);
+    
+    pGetPosition(nodeBall.physicsLoc, pos);
+    vec3ToOpenGL(posGL, pos);
+    vecSubtract(3, prevPhysBall, pos, dif);
+    vecSubtract(3, nodeBall.translation, dif, trans);
+    sceneSetTranslation(&nodeBall, trans);
+    pSetPosition(nodeBall.physicsLoc, nodeBall.worldPos[0] - dif[0], nodeBall.worldPos[1] - dif[1], nodeBall.worldPos[2] - dif[2]);
+    for(int i = 0; i < 3; i++) {
+        prevPhysBall[i] = nodeBall.worldPos[i] - dif[i];
+    }
+    pGetRotation(nodeBall.physicsLoc, rot);
+    mat33ToOpenGL(rotGL, rot); 
+    sceneSetRotation(&nodeBall, rotGL);
 }
 
 void render(void) {
-    physicsRender();
-    
 	GLdouble identity[4][4];
 	mat44Identity(identity);
 	/* Save the viewport transformation. */
@@ -536,6 +567,8 @@ void render(void) {
 	/* For each shadow-casting light, turn it off when finished rendering. */
 	shadowUnrender(GL_TEXTURE7);
     shadowUnrender(GL_TEXTURE8);
+    
+    physicsRender();
 }
 
 int main(void) {

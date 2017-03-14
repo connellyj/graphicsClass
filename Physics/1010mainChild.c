@@ -2,8 +2,13 @@
 
 
 /* On macOS, compile with...
-    clang++ 1000mainPhysics.c /usr/local/gl3w/src/gl3w.o -lglfw -framework OpenGL -framework CoreFoundation -l ode
+    clang++ 1010mainChild.c /usr/local/gl3w/src/gl3w.o -lglfw -framework OpenGL -framework CoreFoundation -l ode
 */
+
+/* Demo using core API functions
+ * to show relationship between two objects where a physics
+ * body is the child of a physics geom
+ */
 
 #include "1000physics.c"
 #include <stdio.h>
@@ -26,14 +31,14 @@ double getTime(void) {
 #include "1000matrix.c"
 #include "1000camera.c"
 #include "1000texture.c"
-#include "1000scene.c"
+#include "1010scene.c"
 #include "1000light.c"
 #include "1000shadow.c"
 
 camCamera cam;
-texTexture texH, texV, texW, texT, texL, texSwagLord;
-meshGLMesh meshH, meshV, meshW, meshT, meshL, meshBall;
-sceneNode nodeH, nodeV, nodeW, nodeT, nodeL, nodeBall;
+texTexture texH, texV, texW, texT, texL, texBall, texChild;
+meshGLMesh meshH, meshV, meshW, meshT, meshL, meshBall, meshChild;
+sceneNode nodeH, nodeV, nodeW, nodeT, nodeL, nodeBall, nodeChild;
 /* We need just one shadow program, because all of our meshes have the same 
 attribute structure. */
 shadowProgram sdwProg;
@@ -69,6 +74,15 @@ void handleKey(GLFWwindow *window, int key, int scancode, int action,
 	if (action == GLFW_PRESS && key == GLFW_KEY_L) {
 		camSwitchProjectionType(&cam);
 	} else if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        if(key == GLFW_KEY_UP) {
+            nodeBall.translation[2] += 1.0;
+        }else if(key == GLFW_KEY_DOWN) {
+            nodeBall.translation[2] -= 1.0;
+        }else if(key == GLFW_KEY_RIGHT) {
+            nodeBall.translation[0] += 1.0;
+        }else if(key == GLFW_KEY_LEFT) {
+            nodeBall.translation[0] -= 1.0;
+        }
 		if (key == GLFW_KEY_A)
 			camAddTheta(&cam, -0.1);
 		else if (key == GLFW_KEY_D)
@@ -132,7 +146,11 @@ int initializeScene(void) {
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 5;
     char chick[] = "chicken.jpg";
-    if (texInitializeFile(&texSwagLord, chick, GL_LINEAR, GL_LINEAR, 
+    if (texInitializeFile(&texBall, chick, GL_LINEAR, GL_LINEAR, 
+    		GL_REPEAT, GL_REPEAT) != 0)
+    	return 6;
+    char child[] = "tree.jpg";
+    if (texInitializeFile(&texChild, child, GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 6;
 	GLuint attrDims[3] = {3, 2, 3};
@@ -211,7 +229,15 @@ int initializeScene(void) {
     meshGLVAOInitialize(&meshBall, 0, attrLocs);
 	meshGLVAOInitialize(&meshBall, 1, sdwProg.attrLocs);
 	meshDestroy(&mesh);
-    if (sceneInitialize(&nodeBall, 3, 1, &meshBall, NULL, NULL) != 0)
+    if (meshInitializeBox(&mesh, -2, 2, -2, 2, -2, 2) != 0)
+		return 31;
+    meshGLInitialize(&meshChild, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshChild, 0, attrLocs);
+	meshGLVAOInitialize(&meshChild, 1, sdwProg.attrLocs);
+	meshDestroy(&mesh);
+    if (sceneInitialize(&nodeChild, 3, 1, &meshChild, NULL, NULL) != 0)
+		return 41;
+    if (sceneInitialize(&nodeBall, 3, 1, &meshBall, &nodeChild, NULL) != 0)
 		return 51;
 	if (sceneInitialize(&nodeW, 3, 1, &meshW, NULL, NULL) != 0)
 		return 14;
@@ -227,7 +253,9 @@ int initializeScene(void) {
 	sceneSetTranslation(&nodeT, trans);
 	vecSet(3, trans, 0.0, 0.0, 7.0);
 	sceneSetTranslation(&nodeL, trans);
-    vecSet(3, trans, 38.0, 28.0, 45.0);
+	vecSet(3, trans, 0.0, 0.0, -10.0);
+    sceneSetTranslation(&nodeChild, trans);
+    vecSet(3, trans, 38.0, 28.0, 55.0);
 	sceneSetTranslation(&nodeBall, trans);
 	GLdouble unif[3] = {0.0, 0.0, 0.0};
 	sceneSetUniform(&nodeH, unif);
@@ -248,8 +276,10 @@ int initializeScene(void) {
 	sceneSetOneTexture(&nodeT, 0, tex);
 	tex = &texL;
 	sceneSetOneTexture(&nodeL, 0, tex);
-    tex = &texSwagLord;
+    tex = &texBall;
     sceneSetOneTexture(&nodeBall, 0, tex);
+    tex = &texChild;
+    sceneSetOneTexture(&nodeChild, 0, tex);
 	return 0;
 }
 
@@ -259,13 +289,15 @@ void destroyScene(void) {
 	texDestroy(&texW);
 	texDestroy(&texT);
 	texDestroy(&texL);
-    texDestroy(&texSwagLord);
+    texDestroy(&texBall);
+    texDestroy(&texChild);
 	meshGLDestroy(&meshH);
 	meshGLDestroy(&meshV);
 	meshGLDestroy(&meshW);
 	meshGLDestroy(&meshT);
 	meshGLDestroy(&meshL);
     meshGLDestroy(&meshBall);
+    meshGLDestroy(&meshChild);
 	sceneDestroyRecursively(&nodeH);
     pPhysicsDestroy();
 }
@@ -276,7 +308,7 @@ okay, because the program terminates almost immediately after this function
 returns. */
 int initializeCameraLight(void) {
     GLdouble vec[3] = {30.0, 30.0, 5.0};
-	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 768.0, 768.0, 100.0, 
+	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 768.0, 768.0, 250.0, 
 		M_PI / 4.0, M_PI / 4.0, vec);
 	lightSetType(&light, lightSPOT);
 	vecSet(3, vec, 45.0, 30.0, 20.0);
@@ -307,12 +339,17 @@ int initializeCameraLight(void) {
 	return 0;
 }
 
+GLdouble prevPhysChild[3];
+
 /* Initializes the physics simulation and associates physics objects with graphics ones */
 void initPhysics() {
     pInitPhysics(10);
-    sceneSetPhysicsLoc(&nodeBall, pInitSphere(pGEOM_AND_BODY, 1.0, 3.0));
+    sceneSetPhysicsLoc(&nodeBall, pInitSphere(pGEOM_ONLY, 1.0, 3.0));
     pSetPosition(nodeBall.physicsLoc, nodeBall.translation[0], 
                  nodeBall.translation[1], nodeBall.translation[2]);
+    sceneSetPhysicsLoc(&nodeChild, pInitBox(pGEOM_AND_BODY, 1.0, 4.0, 4.0, 4.0));
+    pSetPosition(nodeChild.physicsLoc, nodeBall.translation[0], 
+                 nodeBall.translation[1], nodeBall.translation[2] + nodeChild.translation[2]);
     sceneSetPhysicsLoc(&nodeL, pInitSphere(pGEOM_ONLY, 0.0, 5.0));
     pSetPosition(nodeL.physicsLoc, 40.0, 28.0, 12.0);
     sceneSetPhysicsLoc(&nodeT, pInitCapsule(pGEOM_ONLY, 0.0, 1.0, 10.0));
@@ -322,6 +359,9 @@ void initPhysics() {
     pSetPosition(nodeW.physicsLoc, 0.5 * 55.0 + nodeW.translation[0], 
                  0.5 * 55.0 + nodeW.translation[1], nodeW.translation[2]);
     pSetGravity(0.0, 0.0, -0.25);
+    prevPhysChild[0] = nodeBall.translation[0];
+    prevPhysChild[1] = nodeBall.translation[1];
+    prevPhysChild[2] = nodeBall.translation[2] + nodeChild.translation[2];
 }
 
 /* Returns 0 on success, non-zero on failure. */
@@ -387,7 +427,7 @@ int initializeShaderProgram(void) {
             float a = lightAtt[0] + lightAtt[1] * d + lightAtt[2] * d * d;\
             float diffInt = dot(norDir, litDir) / a;\
             float specInt = dot(refDir, camDir);\
-            float ambInt = 0.25;\
+            float ambInt = 0.6;\
 			if (dot(lightAim, -litDir) < lightCos)\
 				diffInt = 0.0;\
             if (diffInt <= 0.0 || specInt <= 0.0)\
@@ -455,17 +495,23 @@ void physicsRender() {
     GLdouble rotGL[3][3];
     GLdouble posGL[3];
     
-    pGetPosition(nodeBall.physicsLoc, pos);
+    pGetPosition(nodeChild.physicsLoc, pos);
     vec3ToOpenGL(posGL, pos);
-    sceneSetTranslation(&nodeBall, posGL);
-    pGetRotation(nodeBall.physicsLoc, rot);
+    GLdouble dif[3];
+    vecSubtract(3, prevPhysChild, pos, dif);
+    GLdouble trans[3];
+    vecSubtract(3, nodeChild.translation, dif, trans);
+    sceneSetTranslation(&nodeChild, trans);
+    pSetPosition(nodeChild.physicsLoc, nodeChild.worldPos[0] - dif[0], nodeChild.worldPos[1] - dif[1], nodeChild.worldPos[2] - dif[2]);
+    for(int i = 0; i < 3; i++) {
+        prevPhysChild[i] = nodeChild.worldPos[i] - dif[i];
+    }
+    pGetRotation(nodeChild.physicsLoc, rot);
     mat33ToOpenGL(rotGL, rot); 
-    sceneSetRotation(&nodeBall, rotGL);
+    sceneSetRotation(&nodeChild, rotGL);
 }
 
 void render(void) {
-    physicsRender();
-    
 	GLdouble identity[4][4];
 	mat44Identity(identity);
 	/* Save the viewport transformation. */
@@ -504,6 +550,8 @@ void render(void) {
 	/* For each shadow-casting light, turn it off when finished rendering. */
 	shadowUnrender(GL_TEXTURE7);
     shadowUnrender(GL_TEXTURE8);
+    
+    physicsRender();
 }
 
 int main(void) {

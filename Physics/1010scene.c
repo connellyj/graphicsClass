@@ -8,6 +8,7 @@ typedef struct sceneNode sceneNode;
 struct sceneNode {
 	GLdouble rotation[3][3];
 	GLdouble translation[3];
+    GLdouble worldPos[3];
 	GLuint unifDim;
 	GLdouble *unif;
 	meshGLMesh *meshGL;
@@ -33,6 +34,7 @@ int sceneInitialize(sceneNode *node, GLuint unifDim, GLuint texNum,
 	node->meshGL = mesh;
 	node->firstChild = firstChild;
 	node->nextSibling = nextSibling;
+    node->physicsLoc = -1;
 	return 0;
 }
 
@@ -172,9 +174,12 @@ void sceneRender(sceneNode *node, GLdouble parent[4][4], GLint modelingLoc,
     if(node == NULL) return;
 	/* Set the uniform modeling matrix. */
     GLfloat modeling[4][4];
-    GLdouble parentTimesModel[4][4], model[4][4]; 
+    GLdouble parentTimesModel[4][4], model[4][4];
 	mat44Isometry(node->rotation, node->translation, model);
     mat444Multiply(parent, model, parentTimesModel);
+    for(int i = 0; i < 3; i++) {
+        node->worldPos[i] = parentTimesModel[i][3];
+    }
 	mat44OpenGL(parentTimesModel, modeling);
 	glUniformMatrix4fv(modelingLoc, 1, GL_FALSE, (GLfloat *)modeling);
 	/* Set the other uniforms. The casting from double to float is annoying. */
