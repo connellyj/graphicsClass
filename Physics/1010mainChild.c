@@ -308,7 +308,7 @@ okay, because the program terminates almost immediately after this function
 returns. */
 int initializeCameraLight(void) {
     GLdouble vec[3] = {30.0, 30.0, 5.0};
-	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 768.0, 768.0, 250.0, 
+	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 768.0, 768.0, 200.0, 
 		M_PI / 4.0, M_PI / 4.0, vec);
 	lightSetType(&light, lightSPOT);
 	vecSet(3, vec, 45.0, 30.0, 20.0);
@@ -427,7 +427,7 @@ int initializeShaderProgram(void) {
             float a = lightAtt[0] + lightAtt[1] * d + lightAtt[2] * d * d;\
             float diffInt = dot(norDir, litDir) / a;\
             float specInt = dot(refDir, camDir);\
-            float ambInt = 0.6;\
+            float ambInt = 0.3;\
 			if (dot(lightAim, -litDir) < lightCos)\
 				diffInt = 0.0;\
             if (diffInt <= 0.0 || specInt <= 0.0)\
