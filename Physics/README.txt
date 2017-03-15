@@ -18,3 +18,19 @@ Project Structure:
 - 1010mainChild.c: This is an example of physics integration in the scene graph when a physics
     body is the child of just a geometry. This setup results in more realstic behavior. Use the
     arrow keys to translate the sphere around in the scene.
+- 1020mainJoints.c: Shows examples of each of the 4 different joint types.
+- 1010physics.c: The most recent version of our API.
+
+ODE Installation Insturctions:
+>>> wget https://downloads.sourceforge.net/project/opende/ODE/0.13/ode-0.13.tar.bz2
+>>> ls
+>>> bunzip2 ode-0.13.tar.bz2 
+>>> tar -xvzf ode-0.13.tar 
+>>> cd ode-0.13
+>>> ls
+>>> ./configure --enable-double-precision --prefix=/usr/local
+>>> make
+>>> make install
+
+Sources:
+- Some code modelled after tutorials from http://demura.net/english

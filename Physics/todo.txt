@@ -1,12 +1,8 @@
-- Tell the user when things collide
 - comments (done for core API)
-- maybe add more collision determining values (check docs)
-- capsule/cylinder body orientation? why?
 - write demos for things
-- write mini-paper thing and readme
 - joints! plus demo
 - pretty bouncy demo thing
-- scene graph and rotations!!
+- put joint details in write up
 
 - 6 demos:
     - original
