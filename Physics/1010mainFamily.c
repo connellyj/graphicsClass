@@ -308,7 +308,7 @@ okay, because the program terminates almost immediately after this function
 returns. */
 int initializeCameraLight(void) {
     GLdouble vec[3] = {30.0, 30.0, 5.0};
-	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 768.0, 768.0, 250.0, 
+	camSetControls(&cam, camPERSPECTIVE, M_PI / 6.0, 10.0, 768.0, 768.0, 200.0, 
 		M_PI / 4.0, M_PI / 4.0, vec);
 	lightSetType(&light, lightSPOT);
 	vecSet(3, vec, 45.0, 30.0, 20.0);
@@ -431,7 +431,7 @@ int initializeShaderProgram(void) {
             float a = lightAtt[0] + lightAtt[1] * d + lightAtt[2] * d * d;\
             float diffInt = dot(norDir, litDir) / a;\
             float specInt = dot(refDir, camDir);\
-            float ambInt = 0.6;\
+            float ambInt = 0.3;\
 			if (dot(lightAim, -litDir) < lightCos)\
 				diffInt = 0.0;\
             if (diffInt <= 0.0 || specInt <= 0.0)\
@@ -492,40 +492,42 @@ int initializeShaderProgram(void) {
 	return (program == 0);
 }
 
-/* Fetches the updated position and rotation of all physics objects */
-void physicsRender() {
+/* Applies a compromoise between physics and the scene graph to all relevant parties */
+void compromiseSceneGraphAndPhysics(sceneNode *node, double prevPhys[3]) {
     double pos[3];
     double rot[3][3];
     GLdouble rotGL[3][3];
     GLdouble posGL[3];
-    
-    pGetPosition(nodeChild.physicsLoc, pos);
-    vec3ToOpenGL(posGL, pos);
     GLdouble dif[3];
-    vecSubtract(3, prevPhysChild, pos, dif);
-    GLdouble trans[3];
-    vecSubtract(3, nodeChild.translation, dif, trans);
-    sceneSetTranslation(&nodeChild, trans);
-    pSetPosition(nodeChild.physicsLoc, nodeChild.worldPos[0] - dif[0], nodeChild.worldPos[1] - dif[1], nodeChild.worldPos[2] - dif[2]);
-    for(int i = 0; i < 3; i++) {
-        prevPhysChild[i] = nodeChild.worldPos[i] - dif[i];
-    }
-    pGetRotation(nodeChild.physicsLoc, rot);
-    mat33ToOpenGL(rotGL, rot); 
-    sceneSetRotation(&nodeChild, rotGL);
     
-    pGetPosition(nodeBall.physicsLoc, pos);
+    // Get the current position of the physics body
+    pGetPosition(node->physicsLoc, pos);
     vec3ToOpenGL(posGL, pos);
-    vecSubtract(3, prevPhysBall, pos, dif);
-    vecSubtract(3, nodeBall.translation, dif, trans);
-    sceneSetTranslation(&nodeBall, trans);
-    pSetPosition(nodeBall.physicsLoc, nodeBall.worldPos[0] - dif[0], nodeBall.worldPos[1] - dif[1], nodeBall.worldPos[2] - dif[2]);
+    
+    // Calculate the new translation value (t - (p_0 - p)) and set it
+    vecSubtract(3, prevPhys, posGL, dif);
+    vecSubtract(3, node->translation, dif, posGL);
+    sceneSetTranslation(node, posGL);
+    
+    // Set the position of the physics object to (w - (p_0 - p))
+    pSetPosition(node->physicsLoc, node->worldPos[0] - dif[0], 
+                 node->worldPos[1] - dif[1], node->worldPos[2] - dif[2]);
+    
+    // Update the previous physics vector
     for(int i = 0; i < 3; i++) {
-        prevPhysBall[i] = nodeBall.worldPos[i] - dif[i];
+        prevPhys[i] = node->worldPos[i] - dif[i];
     }
-    pGetRotation(nodeBall.physicsLoc, rot);
+    
+    // Do rotation
+    pGetRotation(node->physicsLoc, rot);
     mat33ToOpenGL(rotGL, rot); 
-    sceneSetRotation(&nodeBall, rotGL);
+    sceneSetRotation(node, rotGL);
+}
+
+/* Fetches the updated position and rotation of all physics objects */
+void physicsRender() {
+    compromiseSceneGraphAndPhysics(&nodeBall, prevPhysBall);
+    compromiseSceneGraphAndPhysics(&nodeChild, prevPhysChild);
 }
 
 void render(void) {
