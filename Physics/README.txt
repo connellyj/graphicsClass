@@ -18,7 +18,10 @@ Project Structure:
 - 1010mainChild.c: This is an example of physics integration in the scene graph when a physics
     body is the child of just a geometry. This setup results in more realstic behavior. Use the
     arrow keys to translate the sphere around in the scene.
-- 1020mainJoints.c: Shows examples of each of the 4 different joint types.
+- 1020mainJoints.c: Shows examples of the hinge, ball, and slider joints. The red objects in the
+    scene represent the location of the joints the objects are rotating/moving around. Press 'O'
+    to change the force direction on the hinge joint (takes a little while to respond), and 'P' 
+    to change the direction on the slider.
 - 1010physics.c: The most recent version of our API.
 
 ODE Installation Insturctions:
