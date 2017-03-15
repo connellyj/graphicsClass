@@ -2,7 +2,7 @@
 
 
 /* On macOS, compile with...
-    clang++ 1010mainFamily.c /usr/local/gl3w/src/gl3w.o -lglfw -framework OpenGL -framework CoreFoundation -l ode
+    clang++ 1020mainJoints.c /usr/local/gl3w/src/gl3w.o -lglfw -framework OpenGL -framework CoreFoundation -l ode
 */
 
 /* Demo using core API functions
@@ -31,14 +31,14 @@ double getTime(void) {
 #include "1000matrix.c"
 #include "1000camera.c"
 #include "1000texture.c"
-#include "1010scene.c"
+#include "1020scene.c"
 #include "1000light.c"
 #include "1000shadow.c"
 
 camCamera cam;
-texTexture texH, texV, texW, texT, texL, texBall, texChild;
-meshGLMesh meshH, meshV, meshW, meshT, meshL, meshBall, meshChild;
-sceneNode nodeH, nodeV, nodeW, nodeT, nodeL, nodeBall, nodeChild;
+texTexture texW, texAB, texC1, texC3, texC4, texD, texE1, texE3, texE4, texRed;
+meshGLMesh meshW, meshC1, meshC3, meshC4, meshE1, meshE3, meshE4, meshRed, meshRed1, meshRed2;
+sceneNode nodeW, nodeC1, nodeC3, nodeC4, nodeE1, nodeE3, nodeE4, nodeRed, nodeRed1, nodeRed2;
 /* We need just one shadow program, because all of our meshes have the same 
 attribute structure. */
 shadowProgram sdwProg;
@@ -55,6 +55,8 @@ GLint staticPosLoc, staticColLoc, staticAttLoc, staticDirLoc, staticCosLoc;
 GLint camPosLoc;
 GLint viewingSdwLoc, textureSdwLoc;
 GLint viewingSdwStaticLoc, textureSdwStaticLoc;
+dReal sliderForce = -1.0;
+dReal hingeDir = -1.0;
 
 void handleError(int error, const char *description) {
 	fprintf(stderr, "handleError: %d\n%s\n", error, description);
@@ -74,6 +76,12 @@ void handleKey(GLFWwindow *window, int key, int scancode, int action,
 	if (action == GLFW_PRESS && key == GLFW_KEY_L) {
 		camSwitchProjectionType(&cam);
 	} else if (action == GLFW_PRESS || action == GLFW_REPEAT) {
+        if(key == GLFW_KEY_O) {
+            hingeDir *= -1;
+            pSetHingeJointParams(nodeE4.jointLoc, -2*M_PI, 2*M_PI, hingeDir, 15.0);
+        }else if(key == GLFW_KEY_P) {
+            sliderForce *= -1;
+        }
 		if (key == GLFW_KEY_A)
 			camAddTheta(&cam, -0.1);
 		else if (key == GLFW_KEY_D)
@@ -116,180 +124,187 @@ midway through, then does not properly deallocate all resources. But that's
 okay, because the program terminates almost immediately after this function 
 returns. */
 int initializeScene(void) {
-	char grass[] = "snowygrass.jpg";
-	if (texInitializeFile(&texH, grass, GL_LINEAR, GL_LINEAR, 
+    char cubes[] = "snowcliff.jpg";
+	if (texInitializeFile(&texAB, cubes, GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 1;
-    char cliff[] = "snowcliff.jpg";
-    if (texInitializeFile(&texV, cliff, GL_LINEAR, GL_LINEAR, 
+    char ground[] = "snowygrass.jpg";
+	if (texInitializeFile(&texW, ground, GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 2;
-    char ice[] = "ice.jpg";
-    if (texInitializeFile(&texW, ice, GL_LINEAR, GL_LINEAR, 
+	char board[] = "board.jpg";
+	if (texInitializeFile(&texC1, board, GL_LINEAR, GL_LINEAR, 
+    		GL_REPEAT, GL_REPEAT) != 0)
+    	return 11;
+    char iron[] = "iron.png";
+    if (texInitializeFile(&texC3, iron, GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 3;
     char trunk[] = "trunk.jpg";
-    if (texInitializeFile(&texT, trunk, GL_LINEAR, GL_LINEAR, 
+    if (texInitializeFile(&texD, trunk, GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 4;
-    char tree[] = "leaves.jpg";
-    if (texInitializeFile(&texL, tree, GL_LINEAR, GL_LINEAR, 
+    char plank[] = "grass.png";
+    if (texInitializeFile(&texC4, plank, GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 5;
     char chick[] = "chicken.jpg";
-    if (texInitializeFile(&texBall, chick, GL_LINEAR, GL_LINEAR, 
+    if (texInitializeFile(&texE1, chick, GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
     	return 6;
-    char child[] = "tree.jpg";
-    if (texInitializeFile(&texChild, child, GL_LINEAR, GL_LINEAR, 
+    char barber[] = "barber.jpg";
+    if (texInitializeFile(&texE3, barber, GL_LINEAR, GL_LINEAR, 
     		GL_REPEAT, GL_REPEAT) != 0)
-    	return 6;
+    	return 8;
+    char web[] = "leaves.jpg";
+    if (texInitializeFile(&texE4, web, GL_LINEAR, GL_LINEAR, 
+    		GL_REPEAT, GL_REPEAT) != 0)
+    	return 9;
+    char red[] = "red.jpg";
+    if (texInitializeFile(&texRed, red, GL_LINEAR, GL_LINEAR, 
+    		GL_REPEAT, GL_REPEAT) != 0)
+    	return 91;
 	GLuint attrDims[3] = {3, 2, 3};
-    double zs[12][12] = {
-		{5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 20.0}, 
-		{5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 20.0, 25.0}, 
-		{5.0, 5.0, 10.0, 12.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 20.0, 25.0}, 
-		{5.0, 5.0, 10.0, 10.0, 5.0, 5.0, 5.0, 5.0, 5.0, 20.0, 25.0, 27.0}, 
-		{0.0, 0.0, 5.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 20.0, 20.0, 25.0}, 
-		{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 25.0}, 
-		{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, 
-		{0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0}, 
-		{0.0, 0.0, 0.0, 0.0, 0.0, 5.0, 7.0, 0.0, 0.0, 0.0, 0.0, 0.0}, 
-		{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 20.0}, 
-		{5.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 20.0, 20.0, 20.0}, 
-		{10.0, 10.0, 5.0, 5.0, 0.0, 0.0, 0.0, 5.0, 10.0, 15.0, 20.0, 25.0}};
-	double ws[12][12] = {
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}, 
-		{1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0}};
-	meshMesh mesh, meshLand;
-	if (meshInitializeLandscape(&meshLand, 12, 12, 5.0, (double *)zs) != 0)
-		return 6;
-	if (meshInitializeDissectedLandscape(&mesh, &meshLand, M_PI / 3.0, 1) != 0)
-		return 7;
-	/* There are now two VAOs per mesh. */
-	meshGLInitialize(&meshH, &mesh, 3, attrDims, 2);
-	meshGLVAOInitialize(&meshH, 0, attrLocs);
-	meshGLVAOInitialize(&meshH, 1, sdwProg.attrLocs);
+	meshMesh mesh;
+    if (meshInitializeBox(&mesh, -3.0, 3.0, -3.0, 3.0, -3.0, 3.0) != 0)
+		return 10;
+    meshGLInitialize(&meshC1, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshC1, 0, attrLocs);
+	meshGLVAOInitialize(&meshC1, 1, sdwProg.attrLocs);
+    meshGLInitialize(&meshC3, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshC3, 0, attrLocs);
+	meshGLVAOInitialize(&meshC3, 1, sdwProg.attrLocs);
+    meshGLInitialize(&meshC4, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshC4, 0, attrLocs);
+	meshGLVAOInitialize(&meshC4, 1, sdwProg.attrLocs);
+    meshGLInitialize(&meshE1, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshE1, 0, attrLocs);
+	meshGLVAOInitialize(&meshE1, 1, sdwProg.attrLocs);
+    meshGLInitialize(&meshE3, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshE3, 0, attrLocs);
+	meshGLVAOInitialize(&meshE3, 1, sdwProg.attrLocs);
+    meshGLInitialize(&meshE4, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshE4, 0, attrLocs);
+	meshGLVAOInitialize(&meshE4, 1, sdwProg.attrLocs);
 	meshDestroy(&mesh);
-	if (meshInitializeDissectedLandscape(&mesh, &meshLand, M_PI / 3.0, 0) != 0)
-		return 8;
-	meshDestroy(&meshLand);
-	double *vert, normal[2];
-	for (int i = 0; i < mesh.vertNum; i += 1) {
-		vert = meshGetVertexPointer(&mesh, i);
-		normal[0] = -vert[6];
-		normal[1] = vert[5];
-		vert[3] = (vert[0] * normal[0] + vert[1] * normal[1]) / 20.0;
-		vert[4] = vert[2] / 20.0;
-	}
-	meshGLInitialize(&meshV, &mesh, 3, attrDims, 2);
-	meshGLVAOInitialize(&meshV, 0, attrLocs);
-	meshGLVAOInitialize(&meshV, 1, sdwProg.attrLocs);
-	meshDestroy(&mesh);
-	if (meshInitializeLandscape(&mesh, 12, 12, 5.0, (double *)ws) != 0)
-		return 9;
-	meshGLInitialize(&meshW, &mesh, 3, attrDims, 2);
-	meshGLVAOInitialize(&meshW, 0, attrLocs);
+    if (meshInitializeSphere(&mesh, 1.0, 20, 40) != 0)
+		return 10;
+    meshGLInitialize(&meshRed, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshRed, 0, attrLocs);
+	meshGLVAOInitialize(&meshRed, 1, sdwProg.attrLocs);
+    if (meshInitializeCapsule(&mesh, 1.0, 12.0, 20, 40) != 0)
+		return 10;
+    meshGLInitialize(&meshRed1, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshRed1, 0, attrLocs);
+	meshGLVAOInitialize(&meshRed1, 1, sdwProg.attrLocs);
+    meshGLInitialize(&meshRed2, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshRed2, 0, attrLocs);
+	meshGLVAOInitialize(&meshRed2, 1, sdwProg.attrLocs);
+    meshDestroy(&mesh);
+    if (meshInitializeBox(&mesh, -30.0, 30.0, -30.0, 30.0, -5.0, 5.0) != 0)
+		return 10;
+    meshGLInitialize(&meshW, &mesh, 3, attrDims, 2);
+    meshGLVAOInitialize(&meshW, 0, attrLocs);
 	meshGLVAOInitialize(&meshW, 1, sdwProg.attrLocs);
 	meshDestroy(&mesh);
-	if (meshInitializeCapsule(&mesh, 1.0, 10.0, 1, 8) != 0)
-		return 10;
-	meshGLInitialize(&meshT, &mesh, 3, attrDims, 2);
-	meshGLVAOInitialize(&meshT, 0, attrLocs);
-	meshGLVAOInitialize(&meshT, 1, sdwProg.attrLocs);
-	meshDestroy(&mesh);
-	if (meshInitializeSphere(&mesh, 5.0, 8, 16) != 0)
-		return 11;
-	meshGLInitialize(&meshL, &mesh, 3, attrDims, 2);
-	meshGLVAOInitialize(&meshL, 0, attrLocs);
-	meshGLVAOInitialize(&meshL, 1, sdwProg.attrLocs);
-	meshDestroy(&mesh);
-    if (meshInitializeSphere(&mesh, 3.0, 8, 16) != 0)
-		return 21;
-    meshGLInitialize(&meshBall, &mesh, 3, attrDims, 2);
-    meshGLVAOInitialize(&meshBall, 0, attrLocs);
-	meshGLVAOInitialize(&meshBall, 1, sdwProg.attrLocs);
-	meshDestroy(&mesh);
-    if (meshInitializeBox(&mesh, -2, 2, -2, 2, -2, 2) != 0)
-		return 31;
-    meshGLInitialize(&meshChild, &mesh, 3, attrDims, 2);
-    meshGLVAOInitialize(&meshChild, 0, attrLocs);
-	meshGLVAOInitialize(&meshChild, 1, sdwProg.attrLocs);
-	meshDestroy(&mesh);
-    if (sceneInitialize(&nodeChild, 3, 1, &meshChild, NULL, NULL) != 0)
-		return 41;
-    if (sceneInitialize(&nodeBall, 3, 1, &meshBall, &nodeChild, NULL) != 0)
-		return 51;
-	if (sceneInitialize(&nodeW, 3, 1, &meshW, NULL, NULL) != 0)
+    if (sceneInitialize(&nodeW, 3, 1, &meshW, NULL, &nodeC1) != 0)
 		return 14;
-	if (sceneInitialize(&nodeL, 3, 1, &meshL, NULL, NULL) != 0)
+    if (sceneInitialize(&nodeC1, 3, 1, &meshC1, NULL, &nodeC3) != 0)
+		return 41;
+	if (sceneInitialize(&nodeC3, 3, 1, &meshC3, NULL, &nodeC4) != 0)
 		return 16;
-	if (sceneInitialize(&nodeT, 3, 1, &meshT, &nodeL, &nodeW) != 0)
+	if (sceneInitialize(&nodeC4, 3, 1, &meshC4, NULL, &nodeE1) != 0)
 		return 15;
-	if (sceneInitialize(&nodeV, 3, 1, &meshV, NULL, &nodeT) != 0)
+	if (sceneInitialize(&nodeE1, 3, 1, &meshE1, NULL, &nodeE3) != 0)
 		return 13;
-	if (sceneInitialize(&nodeH, 3, 1, &meshH, &nodeV, &nodeBall) != 0)
-		return 12;
-	GLdouble trans[3] = {40.0, 28.0, 5.0};
-	sceneSetTranslation(&nodeT, trans);
-	vecSet(3, trans, 0.0, 0.0, 7.0);
-	sceneSetTranslation(&nodeL, trans);
-	vecSet(3, trans, 0.0, 0.0, 4.0);
-    sceneSetTranslation(&nodeChild, trans);
-    vecSet(3, trans, 38.0, 28.0, 55.0);
-	sceneSetTranslation(&nodeBall, trans);
+    if (sceneInitialize(&nodeE3, 3, 1, &meshE3, NULL, &nodeE4) != 0)
+		return 21;
+    if (sceneInitialize(&nodeE4, 3, 1, &meshE4, NULL, &nodeRed) != 0)
+		return 22;
+    if (sceneInitialize(&nodeRed, 3, 1, &meshRed, NULL, &nodeRed1) != 0)
+		return 22;
+    if (sceneInitialize(&nodeRed1, 3, 1, &meshRed1, NULL, &nodeRed2) != 0)
+		return 22;
+    if (sceneInitialize(&nodeRed2, 3, 1, &meshRed2, NULL, NULL) != 0)
+		return 22;
+	GLdouble trans[3] = {30.0, 30.0, 0.0};
+	sceneSetTranslation(&nodeW, trans);
+	vecSet(3, trans, 15.0, 15.0, 12.0);
+	sceneSetTranslation(&nodeC4, trans);
+    vecSet(3, trans, 15.0, 30.0, 11.0);
+	sceneSetTranslation(&nodeE4, trans);
+    vecSet(3, trans, 20.0, 45.0, 12.0);
+	sceneSetTranslation(&nodeC1, trans);
+    vecSet(3, trans, 45.0, 15.0, 11.0);
+	sceneSetTranslation(&nodeE3, trans);
+    vecSet(3, trans, 40.0, 45.0, 11.0);
+	sceneSetTranslation(&nodeE1, trans);
+    vecSet(3, trans, 45.0, 15.0, 31.0);
+	sceneSetTranslation(&nodeC3, trans);
+    vecSet(3, trans, 45.0, 15.0, 21.0);
+	sceneSetTranslation(&nodeRed, trans);
+    vecSet(3, trans, 15.0, 22.5, 11.0);
+	sceneSetTranslation(&nodeRed1, trans);
+    vecSet(3, trans, 30.0, 45.0, 11.0);
+	sceneSetTranslation(&nodeRed2, trans);
+    GLdouble rotate[3][3]; GLdouble axis[3] = {0.0, 1.0, 0.0};
+    mat33AngleAxisRotation(0.5 * M_PI, axis, rotate);
+    sceneSetRotation(&nodeRed2, rotate);
+    
 	GLdouble unif[3] = {0.0, 0.0, 0.0};
-	sceneSetUniform(&nodeH, unif);
-    sceneSetUniform(&nodeBall, unif);
-	sceneSetUniform(&nodeV, unif);
-	sceneSetUniform(&nodeT, unif);
-	sceneSetUniform(&nodeL, unif);
+    sceneSetUniform(&nodeC1, unif);
+	sceneSetUniform(&nodeC3, unif);
+	sceneSetUniform(&nodeC4, unif);
+    sceneSetUniform(&nodeE1, unif);
+	sceneSetUniform(&nodeE3, unif);
+	sceneSetUniform(&nodeE4, unif);
+    sceneSetUniform(&nodeRed, unif);
+    sceneSetUniform(&nodeRed1, unif);
+    sceneSetUniform(&nodeRed2, unif);
 	vecSet(3, unif, 1.0, 1.0, 1.0);
 	sceneSetUniform(&nodeW, unif);
 	texTexture *tex;
-	tex = &texH;
-	sceneSetOneTexture(&nodeH, 0, tex);
-	tex = &texV;
-	sceneSetOneTexture(&nodeV, 0, tex);
+	tex = &texC1;
+	sceneSetOneTexture(&nodeC1, 0, tex);
 	tex = &texW;
 	sceneSetOneTexture(&nodeW, 0, tex);
-	tex = &texT;
-	sceneSetOneTexture(&nodeT, 0, tex);
-	tex = &texL;
-	sceneSetOneTexture(&nodeL, 0, tex);
-    tex = &texBall;
-    sceneSetOneTexture(&nodeBall, 0, tex);
-    tex = &texChild;
-    sceneSetOneTexture(&nodeChild, 0, tex);
+	tex = &texC3;
+	sceneSetOneTexture(&nodeC3, 0, tex);
+	tex = &texC4;
+	sceneSetOneTexture(&nodeC4, 0, tex);
+    tex = &texE1;
+    sceneSetOneTexture(&nodeE1, 0, tex);
+    tex = &texE3;
+	sceneSetOneTexture(&nodeE3, 0, tex);
+	tex = &texE4;
+	sceneSetOneTexture(&nodeE4, 0, tex);
+    tex = &texRed;
+	sceneSetOneTexture(&nodeRed, 0, tex);
+    sceneSetOneTexture(&nodeRed1, 0, tex);
+    sceneSetOneTexture(&nodeRed2, 0, tex);
 	return 0;
 }
 
 void destroyScene(void) {
-	texDestroy(&texH);
-	texDestroy(&texV);
+	texDestroy(&texC1);
+	texDestroy(&texC3);
+	texDestroy(&texC4);
 	texDestroy(&texW);
-	texDestroy(&texT);
-	texDestroy(&texL);
-    texDestroy(&texBall);
-    texDestroy(&texChild);
-	meshGLDestroy(&meshH);
-	meshGLDestroy(&meshV);
+    texDestroy(&texE1);
+    texDestroy(&texE3);
+    texDestroy(&texE4);
+    texDestroy(&texRed);
 	meshGLDestroy(&meshW);
-	meshGLDestroy(&meshT);
-	meshGLDestroy(&meshL);
-    meshGLDestroy(&meshBall);
-    meshGLDestroy(&meshChild);
-	sceneDestroyRecursively(&nodeH);
+	meshGLDestroy(&meshC1);
+	meshGLDestroy(&meshC3);
+	meshGLDestroy(&meshC4);
+    meshGLDestroy(&meshE1);
+    meshGLDestroy(&meshE3);
+    meshGLDestroy(&meshE4);
+    meshGLDestroy(&meshRed);
+    meshGLDestroy(&meshRed1);
+    meshGLDestroy(&meshRed2);
+	sceneDestroyRecursively(&nodeW);
     pPhysicsDestroy();
 }
 
@@ -332,22 +347,44 @@ int initializeCameraLight(void) {
 
 /* Initializes the physics simulation and associates physics objects with graphics ones */
 void initPhysics() {
-    pInitPhysics(20, 20);
-    sceneSetPhysicsLoc(&nodeBall, pInitSphere(pGEOM_AND_BODY, 1.0, 3.0));
-    pSetPosition(nodeBall.physicsLoc, nodeBall.translation[0], 
-                 nodeBall.translation[1], nodeBall.translation[2]);
-    sceneSetPhysicsLoc(&nodeChild, pInitBox(pGEOM_AND_BODY, 1.0, 4.0, 4.0, 4.0));
-    pSetPosition(nodeChild.physicsLoc, nodeBall.translation[0], 
-                 nodeBall.translation[1], nodeBall.translation[2] + nodeChild.translation[2]);
-    sceneSetPhysicsLoc(&nodeL, pInitSphere(pGEOM_ONLY, 0.0, 5.0));
-    pSetPosition(nodeL.physicsLoc, 40.0, 28.0, 12.0);
-    sceneSetPhysicsLoc(&nodeT, pInitCapsule(pGEOM_ONLY, 0.0, 1.0, 10.0));
-    pSetPosition(nodeT.physicsLoc, nodeT.translation[0], 
-                 nodeT.translation[1], nodeT.translation[2]);
-    sceneSetPhysicsLoc(&nodeW, pInitBox(pGEOM_ONLY, 0.0, 55.0, 55.0, 5.0));
-    pSetPosition(nodeW.physicsLoc, 0.5 * 55.0 + nodeW.translation[0], 
-                 0.5 * 55.0 + nodeW.translation[1], nodeW.translation[2]);
-    pSetGravity(0.0, 0.0, -0.25);
+    pInitPhysics(15, 10);
+    pSetGravity(0.0, 0.0, -0.2);
+    pSetBounciness(0.0);
+    
+    sceneSetPhysicsLoc(&nodeW, pInitBox(pGEOM_ONLY, 0.0, 60.0, 60.0, 10.0));
+    pSetPosition(nodeW.physicsLoc, 30.0, 30.0, 0.0);
+    sceneSetPhysicsLoc(&nodeC1, pInitBox(pGEOM_AND_BODY, 1.0, 6.0, 6.0, 6.0));
+    pSetPosition(nodeC1.physicsLoc, nodeC1.translation[0], nodeC1.translation[1],
+                 nodeC1.translation[2]);
+    sceneSetPhysicsLoc(&nodeC3, pInitBox(pGEOM_AND_BODY, 1.0, 6.0, 6.0, 6.0));
+    pSetPosition(nodeC3.physicsLoc, nodeC3.translation[0], nodeC3.translation[1],
+                 nodeC3.translation[2]);
+    sceneSetPhysicsLoc(&nodeC4, pInitBox(pGEOM_AND_BODY, 1.0, 6.0, 6.0, 6.0));
+    pSetPosition(nodeC4.physicsLoc, nodeC4.translation[0], nodeC4.translation[1],
+                 nodeC4.translation[2]);
+    sceneSetPhysicsLoc(&nodeE1, pInitBox(pGEOM_AND_BODY, 100000000000.0, 6.0, 6.0, 6.0));
+    pSetPosition(nodeE1.physicsLoc, nodeE1.translation[0], nodeE1.translation[1],
+                 nodeE1.translation[2]);
+    sceneSetPhysicsLoc(&nodeE3, pInitBox(pGEOM_AND_BODY, 100000000000.0, 6.0, 6.0, 6.0));
+    pSetPosition(nodeE3.physicsLoc, nodeE3.translation[0], nodeE3.translation[1],
+                 nodeE3.translation[2]);
+    sceneSetPhysicsLoc(&nodeE4, pInitBox(pGEOM_AND_BODY, 100000000000.0, 6.0, 6.0, 6.0));
+    pSetPosition(nodeE4.physicsLoc, nodeE4.translation[0], nodeE4.translation[1],
+                 nodeE4.translation[2]);
+    
+    int jointLoc = pInitJoint(pJOINT_HINGE, nodeC4.physicsLoc, nodeE4.physicsLoc);
+    sceneSetJointLoc(&nodeE4, jointLoc); sceneSetJointLoc(&nodeC4, jointLoc);
+    jointLoc = pInitJoint(pJOINT_BALL, nodeC3.physicsLoc, nodeE3.physicsLoc);
+    sceneSetJointLoc(&nodeE3, jointLoc); sceneSetJointLoc(&nodeC3, jointLoc);
+    jointLoc = pInitJoint(pJOINT_SLIDER, nodeC1.physicsLoc, nodeE1.physicsLoc);
+    sceneSetJointLoc(&nodeE1, jointLoc); sceneSetJointLoc(&nodeC1, jointLoc);
+    
+    pSetBallJointAnchor(nodeE3.jointLoc, 45.0, 15.0, 22.0);
+    pSetHingeJointAnchor(nodeE4.jointLoc, 15.0, 22.5, 12.0);
+    pSetHingeJointAxis(nodeE4.jointLoc, 0.0, 0.0, 1.0);
+    pSetHingeJointParams(nodeE4.jointLoc, -2*M_PI, 2*M_PI, hingeDir, 15.0);
+    pSetSliderJointAxis(nodeE1.jointLoc, 1.0, 0.0, 0.0);
+    pSetSliderJointParams(nodeE1.jointLoc, -20.0, 10.0, 0.0, 0.0);
 }
 
 /* Returns 0 on success, non-zero on failure. */
@@ -480,19 +517,52 @@ void physicsRender() {
     double rot[3][3];
     GLdouble rotGL[3][3];
     GLdouble posGL[3];
-    pGetPosition(nodeBall.physicsLoc, pos);
-    pGetRotation(nodeBall.physicsLoc, rot);
-    vec3ToOpenGL(posGL, pos);
-    sceneSetTranslation(&nodeBall, posGL);
-    mat33ToOpenGL(rotGL, rot); 
-    sceneSetRotation(&nodeBall, rotGL);
     
-    pGetPosition(nodeChild.physicsLoc, pos);
-    pGetRotation(nodeChild.physicsLoc, rot);
+    pSetForce(nodeC3.physicsLoc, 0.1, 0.1, 0.3);
+    pSetForce(nodeC1.physicsLoc, sliderForce, 0.0, 0.2);
+    pSetForce(nodeC4.physicsLoc, 0.0, 0.0, 0.2);
+    
+    pGetPosition(nodeC1.physicsLoc, pos);
     vec3ToOpenGL(posGL, pos);
-    sceneSetTranslation(&nodeChild, posGL);
+    sceneSetTranslation(&nodeC1, posGL);
+    pGetRotation(nodeC1.physicsLoc, rot);
     mat33ToOpenGL(rotGL, rot); 
-    sceneSetRotation(&nodeChild, rotGL);
+    sceneSetRotation(&nodeC1, rotGL);
+    
+    pGetPosition(nodeC3.physicsLoc, pos);
+    vec3ToOpenGL(posGL, pos);
+    sceneSetTranslation(&nodeC3, posGL);
+    pGetRotation(nodeC3.physicsLoc, rot);
+    mat33ToOpenGL(rotGL, rot); 
+    sceneSetRotation(&nodeC3, rotGL);
+    
+    pGetPosition(nodeC4.physicsLoc, pos);
+    vec3ToOpenGL(posGL, pos);
+    sceneSetTranslation(&nodeC4, posGL);
+    pGetRotation(nodeC4.physicsLoc, rot);
+    mat33ToOpenGL(rotGL, rot); 
+    sceneSetRotation(&nodeC4, rotGL);
+    
+    pGetPosition(nodeE1.physicsLoc, pos);
+    vec3ToOpenGL(posGL, pos);
+    sceneSetTranslation(&nodeE1, posGL);
+    pGetRotation(nodeE1.physicsLoc, rot);
+    mat33ToOpenGL(rotGL, rot); 
+    sceneSetRotation(&nodeE1, rotGL);
+    
+    pGetPosition(nodeE3.physicsLoc, pos);
+    vec3ToOpenGL(posGL, pos);
+    sceneSetTranslation(&nodeE3, posGL);
+    pGetRotation(nodeE3.physicsLoc, rot);
+    mat33ToOpenGL(rotGL, rot); 
+    sceneSetRotation(&nodeE3, rotGL);
+    
+    pGetPosition(nodeE4.physicsLoc, pos);
+    vec3ToOpenGL(posGL, pos);
+    sceneSetTranslation(&nodeE4, posGL);
+    pGetRotation(nodeE4.physicsLoc, rot);
+    mat33ToOpenGL(rotGL, rot); 
+    sceneSetRotation(&nodeE4, rotGL);
 }
 
 void render(void) {
@@ -507,10 +577,10 @@ void render(void) {
 	uniforms and textures. */
 	GLint sdwTextureLocs[2] = {-1, -1};
 	shadowMapRender(&sdwMap, &sdwProg, &light, -100.0, -1.0);
-    sceneRender(&nodeH, identity, sdwProg.modelingLoc, 0, NULL, NULL, 1, 
+    sceneRender(&nodeW, identity, sdwProg.modelingLoc, 0, NULL, NULL, 1, 
 		sdwTextureLocs);
     shadowMapRender(&sdwMapStatic, &sdwProg, &lightStatic, -100.0, -1.0);
-	sceneRender(&nodeH, identity, sdwProg.modelingLoc, 0, NULL, NULL, 1, 
+	sceneRender(&nodeW, identity, sdwProg.modelingLoc, 0, NULL, NULL, 1, 
 		sdwTextureLocs);
 	/* Finish preparing the shadow maps, restore the viewport, and begin to 
 	render the scene. */
@@ -531,7 +601,7 @@ void render(void) {
 		staticCosLoc);
     shadowRender(&sdwMapStatic, viewingSdwStaticLoc, GL_TEXTURE8, 8, textureSdwStaticLoc);
 	GLuint unifDims[1] = {3};
-	sceneRender(&nodeH, identity, modelingLoc, 1, unifDims, unifLocs, 0, 
+	sceneRender(&nodeW, identity, modelingLoc, 1, unifDims, unifLocs, 0, 
 		textureLocs);
 	/* For each shadow-casting light, turn it off when finished rendering. */
 	shadowUnrender(GL_TEXTURE7);

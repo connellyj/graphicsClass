@@ -167,10 +167,10 @@ void pSetPosition(int objLocation, double x, double y, double z) {
     }
     dBodyID body = (sim.objects)[objLocation].body;
     dGeomID geom = (sim.objects)[objLocation].geom;
-    if((&body) != NULL) {
+    if(body != NULL) {
         dBodySetPosition(body, (dReal) x, (dReal) y, (dReal) z);
     }
-    if((&geom) != NULL) {
+    if(geom != NULL) {
         dGeomSetPosition(geom, (dReal) x, (dReal) y, (dReal) z);
     }
 }
@@ -184,8 +184,8 @@ void pSetRotation(int objLocation, double mat[3][3]) {
     dGeomID geom = (sim.objects)[objLocation].geom; 
     dMatrix3 rot;
     pMat33ToPhysics(mat, rot);
-    if((&body) != NULL) dBodySetRotation(body, rot);
-    if((&geom) != NULL) dGeomSetRotation(geom, rot);
+    if(body != NULL) dBodySetRotation(body, rot);
+    if(geom != NULL) dGeomSetRotation(geom, rot);
 }
 
 void pSetForce(int objLocation, double x, double y, double z){
@@ -216,8 +216,12 @@ void pSetTorque(int objLocation, double x, double y, double z){
 
 /* Sets the location of the ball joint for the linked objects to be attached to. */
 void pSetBallJointAnchor(int jointLocation, double x, double y, double z){
-    if ((&((sim.joints)[jointLocation])) == NULL){
+    if ((sim.joints)[jointLocation].joint == NULL){
         printf("Specified joint could not be found.\n");
+        return;
+    }
+    if ((sim.joints)[jointLocation].shape != pJOINT_BALL){
+        printf("Specified joint is not a ball.\n");
         return;
     }
     dReal pX = (dReal) x; dReal pY = (dReal) y; dReal pZ = (dReal) z;
@@ -226,8 +230,12 @@ void pSetBallJointAnchor(int jointLocation, double x, double y, double z){
 
 /* Sets the location of the hinge joint for the linked objects to rotate around. */
 void pSetHingeJointAnchor(int jointLocation, double x, double y, double z){
-    if ((&((sim.joints)[jointLocation])) == NULL){
+    if ((sim.joints)[jointLocation].joint == NULL){
         printf("Specified joint could not be found.\n");
+        return;
+    }
+    if ((sim.joints)[jointLocation].shape != pJOINT_HINGE){
+        printf("Specified joint is not a hinge.\n");
         return;
     }
     dReal pX = (dReal) x; dReal pY = (dReal) y; dReal pZ = (dReal) z;
@@ -236,8 +244,12 @@ void pSetHingeJointAnchor(int jointLocation, double x, double y, double z){
 
 /* Sets the axis that the hinge joint rotates around. */
 void pSetHingeJointAxis(int jointLocation, double x, double y, double z){
-    if ((&((sim.joints)[jointLocation])) == NULL){
+    if ((sim.joints)[jointLocation].joint == NULL){
         printf("Specified joint could not be found.\n");
+        return;
+    }
+    if ((sim.joints)[jointLocation].shape != pJOINT_HINGE){
+        printf("Specified joint is not a hinge.\n");
         return;
     }
     dReal pX = (dReal) x; dReal pY = (dReal) y; dReal pZ = (dReal) z;
@@ -246,28 +258,94 @@ void pSetHingeJointAxis(int jointLocation, double x, double y, double z){
 
 /* Sets the axis the two objects linked by the specified joint can slide along. */
 void pSetSliderJointAxis(int jointLocation, double x, double y, double z){
-    if ((&((sim.joints)[jointLocation])) == NULL){
+    if ((sim.joints)[jointLocation].joint == NULL){
         printf("Specified joint could not be found.\n");
+        return;
+    }
+    if ((sim.joints)[jointLocation].shape != pJOINT_SLIDER){
+        printf("Specified joint is not a slider.\n");
         return;
     }
     dReal pX = (dReal) x; dReal pY = (dReal) y; dReal pZ = (dReal) z;
     dJointSetSliderAxis((sim.joints)[jointLocation].joint, pX, pY, pZ);
 }
 
-/* Fixes the specified joint so no movement is possible around that joint. */
+/* Fixes the specified joint so no movement is possible around that joint.
+ * According to the ODE manual, these joints are not typically used outside of debugging.
+ */
 void pSetFixedJoint(int jointLocation){
-    if ((&((sim.joints)[jointLocation])) == NULL){
+    if ((sim.joints)[jointLocation].joint == NULL){
         printf("Specified joint could not be found.\n");
         return;
     }
+    if ((sim.joints)[jointLocation].shape != pJOINT_FIXED){
+        printf("Specified joint is not a fixed joint.\n");
+        return;
+    }
     dJointSetFixed((sim.joints)[jointLocation].joint);
+}
+
+/* Allows the user to specify certain characteristic of a hinge joint.
+ * lowStop: joint's low stop angle, set to dInfinity to turn off.
+ * hiStop: joint's high stop angle, set to dInfinity to turn off.
+ * velocity: joint's desired motor velocity, set to zero if you don't want a motor.
+ * maxForce:
+ * We also set a few other parameters for all joints.
+ */
+void pSetHingeJointParams(int jointLocation, double lowStop, double hiStop, double velocity, double maxForce){
+    if ((sim.joints)[jointLocation].joint == NULL){
+        printf("Specified joint could not be found.\n");
+        return;
+    }
+    if ((sim.joints)[jointLocation].shape != pJOINT_HINGE){
+        printf("Specified joint is not a hinge.\n");
+        return;
+    }
+    dReal pLowStop, pHiStop, pVelocity, pMaxForce;
+    dReal pBounce = 0.05; dReal pFudge = 0.9;
+    pLowStop = (dReal) lowStop; pHiStop = (dReal) hiStop; 
+    pVelocity = (dReal) velocity; pMaxForce = (dReal) maxForce;
+    dJointSetHingeParam((sim.joints)[jointLocation].joint, dParamLoStop, pLowStop);
+    dJointSetHingeParam((sim.joints)[jointLocation].joint, dParamHiStop, pHiStop);
+    dJointSetHingeParam((sim.joints)[jointLocation].joint, dParamVel, pVelocity);
+    dJointSetHingeParam((sim.joints)[jointLocation].joint, dParamFMax, pMaxForce);
+    dJointSetHingeParam((sim.joints)[jointLocation].joint, dParamBounce, pBounce);
+    dJointSetHingeParam((sim.joints)[jointLocation].joint, dParamFudgeFactor, pFudge);
+}
+
+/* Allows the user to specify certain characteristic of a slider joint.
+ * lowStop: joint's low stop angle, set to dInfinity to turn off.
+ * hiStop: joint's high stop angle, set to dInfinity to turn off.
+ * velocity: joint's desired motor velocity, set to zero if you don't want a motor.
+ * maxForce:
+ * We also set a few other parameters for all joints.
+ */
+void pSetSliderJointParams(int jointLocation, double lowStop, double hiStop, double velocity, double maxForce){
+    if ((sim.joints)[jointLocation].joint == NULL){
+        printf("Specified joint could not be found.\n");
+        return;
+    }
+    if ((sim.joints)[jointLocation].shape != pJOINT_SLIDER){
+        printf("Specified joint is not a slider.\n");
+        return;
+    }
+    dReal pLowStop, pHiStop, pVelocity, pMaxForce;
+    dReal pBounce = 0.05; dReal pFudge = 0.9;
+    pLowStop = (dReal) lowStop; pHiStop = (dReal) hiStop; 
+    pVelocity = (dReal) velocity; pMaxForce = (dReal) maxForce;
+    dJointSetSliderParam((sim.joints)[jointLocation].joint, dParamLoStop, pLowStop);
+    dJointSetSliderParam((sim.joints)[jointLocation].joint, dParamHiStop, pHiStop);
+    dJointSetSliderParam((sim.joints)[jointLocation].joint, dParamVel, pVelocity);
+    dJointSetSliderParam((sim.joints)[jointLocation].joint, dParamFMax, pMaxForce);
+    dJointSetSliderParam((sim.joints)[jointLocation].joint, dParamBounce, pBounce);
+    dJointSetSliderParam((sim.joints)[jointLocation].joint, dParamFudgeFactor, pFudge);
 }
 
 /* Disables the specified joint, causing it to stop affecting its related objects.
  * The joint retains all of its information like its anchor and axis, if it has any.
  */
 void pDisableJoint(int jointLocation){
-    if ((&((sim.joints)[jointLocation])) == NULL){
+    if ((sim.joints)[jointLocation].joint == NULL){
         printf("Specified joint could not be found.\n");
         return;
     }
@@ -282,7 +360,7 @@ void pDisableJoint(int jointLocation){
  * The joint affects its related objects based on the information in its properties.
  */
 void pEnableJoint(int jointLocation){
-    if ((&((sim.joints)[jointLocation])) == NULL){
+    if ((sim.joints)[jointLocation].joint == NULL){
         printf("Specified joint could not be found.\n");
         return;
     }
@@ -365,7 +443,7 @@ void pGetObjForce(int objLocation, double force[3]){
 }
 
 int pGetJointShape(int jointLocation){
-    if ((&((sim.joints)[jointLocation])) == NULL){
+    if ((sim.joints)[jointLocation].joint == NULL){
         printf("Specified joint could not be found.\n");
         return -1;
     }
@@ -374,11 +452,60 @@ int pGetJointShape(int jointLocation){
 
 /* Returns 1 if the joint is enabled and 0 if it is disabled */
 int pCheckJointEnabled(int jointLocation){
-    if ((&((sim.joints)[jointLocation])) == NULL){
+    if ((sim.joints)[jointLocation].joint == NULL){
         printf("Specified joint could not be found.\n");
         return -1;
     }
     return (dJointIsEnabled((sim.joints)[jointLocation].joint));
+}
+
+/* Given a hinge joint, this function places the parameters that the user can change into
+ * a passed double array of size = 4. In the array, the specific parameters are arranged:
+ * params[0] = hinge's low stop
+ * params[1] = hinge's high stop
+ * params[2] = hinge's velocity
+ * params[3] = hinge's maximum force
+ */
+void pGetHingeParams(int jointLocation, double params[4]){
+    if ((sim.joints)[jointLocation].joint == NULL){
+        printf("Specified joint could not be found.\n");
+        return;
+    }
+    if ((sim.joints)[jointLocation].shape != pJOINT_HINGE){
+        printf("Specified joint is not a hinge.\n");
+        return;
+    }
+    double p1, p2, p3, p4;
+    p1 = (double) dJointGetHingeParam((sim.joints)[jointLocation].joint, dParamLoStop);
+    p2 = (double) dJointGetHingeParam((sim.joints)[jointLocation].joint, dParamHiStop);
+    p3 = (double) dJointGetHingeParam((sim.joints)[jointLocation].joint, dParamVel);
+    p4 = (double) dJointGetHingeParam((sim.joints)[jointLocation].joint, dParamFMax);
+    params[0] = p1; params[1] = p2; params[2] = p3; params[3] = p4; 
+}
+
+
+/* Given a slider joint, this function places the parameters that the user can change into
+ * a passed double array of size = 4. In the array, the specific parameters are arranged:
+ * params[0] = hinge's low stop
+ * params[1] = hinge's high stop
+ * params[2] = hinge's velocity
+ * params[3] = hinge's maximum force
+ */
+void pGetSliderParams(int jointLocation, double params[4]){
+    if ((sim.joints)[jointLocation].joint == NULL){
+        printf("Specified joint could not be found.\n");
+        return;
+    }
+    if ((sim.joints)[jointLocation].shape != pJOINT_SLIDER){
+        printf("Specified joint is not a slider.\n");
+        return;
+    }
+    double p1, p2, p3, p4;
+    p1 = (double) dJointGetSliderParam((sim.joints)[jointLocation].joint, dParamLoStop);
+    p2 = (double) dJointGetSliderParam((sim.joints)[jointLocation].joint, dParamHiStop);
+    p3 = (double) dJointGetSliderParam((sim.joints)[jointLocation].joint, dParamVel);
+    p4 = (double) dJointGetSliderParam((sim.joints)[jointLocation].joint, dParamFMax);
+    params[0] = p1; params[1] = p2; params[2] = p3; params[3] = p4; 
 }
 
 /*** END GETTERS ***/
@@ -427,6 +554,7 @@ int pInitJoint(int option, int objLoc1, int objLoc2){
     else if (option == pJOINT_FIXED){
         newJoint.joint = dJointCreateFixed(sim.world, 0);
         newJoint.shape = pJOINT_FIXED;
+        dJointSetFixed(newJoint.joint);
     }
     else{
         printf("Invalid joint object creation option selected.\n");
@@ -600,5 +728,6 @@ void pSimLoop() {
 void pPhysicsDestroy() {
     dWorldDestroy(sim.world);
     dJointGroupDestroy((sim.collider).contactGroup);
+    free(sim.joints);
     free(sim.objects);
 }
